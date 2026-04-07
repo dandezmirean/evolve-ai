@@ -61,6 +61,9 @@ gap_framework:
   - "failure_recovery"
   - "observability"
   - "context_utilization"
+  - "lock_contention"
+  - "silent_failures"
+  - "scheduling_conflicts"
 
 observation_types:
   - "prompt_inefficiencies"
@@ -69,6 +72,12 @@ observation_types:
   - "unused_tools"
   - "coordination_gaps"
   - "stale_configurations"
+  - "agent output is empty or contains only error messages"
+  - "agent execution time has increased significantly"
+  - "agent is being skipped due to lock contention"
+  - "agent memory files contain stale or contradictory entries"
+  - "agent prompt references files or features that no longer exist"
+  - "model routing could reduce cost without reducing quality"
 
 scorers:
   heuristic:

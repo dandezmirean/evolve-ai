@@ -1,3 +1,20 @@
+# =============================================================================
+# GENOME TEMPLATE — Your Target System Definition
+# =============================================================================
+# A genome defines what evolve observes, how it evaluates changes, and what
+# safety rules constrain its actions. Copy this template and customize.
+#
+# Required sections: name, description, scan_commands, health_checks, safety_rules
+# Optional sections: gap_framework, observation_types, scorers, challenge_vectors
+#
+# Quick start:
+#   1. Set name and description
+#   2. Add 3-5 scan_commands that capture your system's current state
+#   3. Add 2-3 health_checks that verify your system is working
+#   4. Add safety_rules for things that should NEVER happen
+#   5. Everything else can be added incrementally as evolve runs
+# =============================================================================
+
 # genome.yaml — Target genome definition for evolve-ai
 # Copy this template directory and fill in the fields for your target.
 

@@ -8,6 +8,11 @@ scan_commands:
   - "systemctl list-units --state=running --type=service --no-pager"
   - "crontab -l 2>/dev/null || true"
   - "uname -a"
+  - cpu_info: "lscpu | grep -E 'Model name|CPU\\(s\\)|Thread|Architecture'"
+  - memory_breakdown: "free -h && echo '---' && ps aux --sort=-%mem | head -10"
+  - disk_by_mount: "df -h --output=target,size,used,avail,pcent | sort -k5 -rn"
+  - cron_density: "crontab -l 2>/dev/null | grep -v '^#' | grep -v '^$' | wc -l"
+  - listening_ports: "ss -tlnp 2>/dev/null | tail -n +2"
 
 health_checks:
   - name: "system_responsive"
@@ -107,9 +112,13 @@ safety_rules:
     - "modify SSH to allow password authentication"
     - "run unverified scripts from the internet"
     - "store credentials in plain text"
+    - "install packages if available RAM < 1GB"
+    - "modify cron if it would create scheduling conflicts with existing entries"
   require_approval:
     - condition: "category == 'security-config'"
     - condition: "ambition >= 5"
+    - condition: "installing new system packages (apt/yum/brew)"
+    - condition: "creating new systemd services"
 
 reversibility:
   primary: "git"
