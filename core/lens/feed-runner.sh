@@ -274,24 +274,31 @@ _run_single_feed() {
 
     echo "[feed-runner] Running feed '$name' (type: $type, schedule: $schedule)"
 
+    local adapter_rc=0
     case "$type" in
         rss)
-            source_rss_fetch "$name" "$url" "$output_dir"
+            source_rss_fetch "$name" "$url" "$output_dir" || adapter_rc=$?
             ;;
         command)
-            source_command_run "$name" "$command" "$output_dir"
+            source_command_run "$name" "$command" "$output_dir" || adapter_rc=$?
             ;;
         manual)
-            source_manual_scan "$watch_dir" "$output_dir"
+            source_manual_scan "$watch_dir" "$output_dir" || adapter_rc=$?
             ;;
         webhook)
             echo "[feed-runner] Webhook feed '$name' is a listener — start separately" >&2
+            return 0
             ;;
         *)
             echo "[feed-runner] Unknown feed type '$type' for '$name'" >&2
+            return 1
             ;;
     esac
 
-    # Mark as run
-    source_mark_run "$evolve_root" "$name"
+    if [[ $adapter_rc -eq 0 ]]; then
+        # Mark as run only on success
+        source_mark_run "$evolve_root" "$name"
+    else
+        echo "[feed-runner] Feed '$name' failed (rc=$adapter_rc) — will retry next run" >&2
+    fi
 }
