@@ -1,0 +1,104 @@
+name: "agent-harness"
+description: "Evolve an LLM agent system — prompts, tools, routing, coordination"
+
+scan_commands:
+  - "find . -name '*.md' -path '*/prompts/*' | head -50"
+  - "find . -name 'CLAUDE.md' -o -name 'AGENTS.md' -o -name 'agent*.yaml' | head -20"
+  - "find . -name '*.sh' -path '*/scripts/*' | head -30"
+  - "ls -la */memory/ 2>/dev/null"
+
+health_checks:
+  - name: "agents_have_prompts"
+    command: "find . -name '*.md' -path '*/prompts/*' | wc -l"
+    expect: "output_matches"
+    value: "^[1-9]"
+  - name: "no_syntax_errors"
+    command: "find . -name '*.sh' -exec bash -n {} \\; 2>&1 | wc -l"
+    expect: "output_matches"
+    value: "^0$"
+
+sources:
+  - name: "ai-model-releases"
+    type: "rss"
+    schedule: "daily"
+    description: "New AI model announcements and capabilities"
+    url: ""
+  - name: "framework-changelog"
+    type: "command"
+    schedule: "weekly"
+    description: "Check for updates to the LLM CLI/SDK"
+    command: ""
+  - name: "prompt-research"
+    type: "rss"
+    schedule: "weekly"
+    description: "Prompt engineering techniques and research"
+    url: ""
+
+gap_framework:
+  - "prompt_quality"
+  - "tool_coverage"
+  - "agent_coordination"
+  - "memory_effectiveness"
+  - "cost_efficiency"
+  - "failure_recovery"
+  - "observability"
+  - "context_utilization"
+
+observation_types:
+  - "prompt_inefficiencies"
+  - "missing_error_handling"
+  - "memory_bloat"
+  - "unused_tools"
+  - "coordination_gaps"
+  - "stale_configurations"
+
+scorers:
+  heuristic:
+    - name: "prompt_size_efficiency"
+      command: "find . -name '*.md' -path '*/prompts/*' -exec wc -w {} + | tail -1 | awk '{print $1}'"
+      weight: 1
+      direction: "lower_is_better"
+    - name: "agent_count"
+      command: "find . -maxdepth 2 -name 'CLAUDE.md' | wc -l"
+      weight: 1
+      direction: "higher_is_better"
+  llm_judge:
+    enabled: true
+    prompt: "Evaluate whether this agent system change improves capability, reliability, and coordination quality. Score 0.0-1.0."
+
+safety_rules:
+  never:
+    - "delete an agent entirely without backup"
+    - "modify scoring functions or metrics to game results"
+    - "remove safety rules from agent prompts"
+    - "expose API keys or credentials"
+    - "push to remote repository"
+  require_approval:
+    - condition: "category == 'self-mod'"
+    - condition: "ambition >= 5"
+
+reversibility:
+  primary: "git"
+  side_effects:
+    - type: "cron"
+      undo: "crontab restore from backup"
+    - type: "memory"
+      undo: "git checkout -- {path}"
+
+commit_categories:
+  - "prompt-mod"
+  - "new-agent"
+  - "tool-add"
+  - "cross-agent"
+  - "memory-mod"
+  - "script-mod"
+  - "cron-fix"
+  - "self-mod"
+
+challenge_vectors:
+  - "Does this prompt change make the agent less general?"
+  - "Could this tool addition conflict with existing tools?"
+  - "Is this coordination pattern adding latency without value?"
+  - "Does this memory change grow unboundedly?"
+  - "Will this change work across different LLM providers?"
+  - "Could this create a circular dependency between agents?"

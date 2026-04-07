@@ -1,0 +1,114 @@
+name: "codebase"
+description: "Evolve a software codebase — tests, quality, performance, dependencies"
+
+scan_commands:
+  - "git log --oneline -20"
+  - "git diff --stat HEAD~5 2>/dev/null || true"
+  - "find . -name 'package.json' -o -name 'requirements.txt' -o -name 'Cargo.toml' -o -name 'go.mod' | head -5"
+
+health_checks:
+  - name: "tests_pass"
+    command: ""
+    expect: "exit_code_0"
+  - name: "builds"
+    command: ""
+    expect: "exit_code_0"
+  - name: "no_lint_errors"
+    command: ""
+    expect: "exit_code_0"
+
+sources:
+  - name: "dependency-updates"
+    type: "command"
+    schedule: "daily"
+    description: "Check for outdated dependencies"
+    command: ""
+  - name: "vulnerability-scan"
+    type: "command"
+    schedule: "daily"
+    description: "Security vulnerability detection"
+    command: ""
+  - name: "language-releases"
+    type: "rss"
+    schedule: "weekly"
+    description: "Language/runtime release notes"
+    url: ""
+
+gap_framework:
+  - "test_coverage"
+  - "error_handling"
+  - "performance"
+  - "dependency_health"
+  - "code_quality"
+  - "ci_cd"
+  - "security"
+
+observation_types:
+  - "test_failures"
+  - "lint_warnings"
+  - "type_errors"
+  - "build_warnings"
+  - "unused_exports"
+  - "circular_dependencies"
+  - "large_files"
+
+scorers:
+  heuristic:
+    - name: "test_pass_rate"
+      command: ""
+      weight: 3
+      direction: "higher_is_better"
+    - name: "lint_score"
+      command: ""
+      weight: 2
+      direction: "higher_is_better"
+    - name: "build_time_seconds"
+      command: ""
+      weight: 1
+      direction: "lower_is_better"
+  llm_judge:
+    enabled: true
+    prompt: "Evaluate whether this code change improves quality, maintainability, performance, and correctness. Score 0.0-1.0."
+
+safety_rules:
+  never:
+    - "push to remote repository"
+    - "modify test files to make tests pass (fix the code, not the tests)"
+    - "delete user data or database migrations"
+    - "introduce dependencies without security check"
+    - "remove error handling to simplify code"
+    - "commit credentials, API keys, or secrets"
+  require_approval:
+    - condition: "category == 'deps-major'"
+    - condition: "ambition >= 5"
+
+reversibility:
+  primary: "git"
+  side_effects:
+    - type: "npm"
+      undo: "npm install"
+    - type: "pip"
+      undo: "pip install -r requirements.txt"
+    - type: "cargo"
+      undo: "cargo build"
+
+commit_categories:
+  - "test-add"
+  - "test-fix"
+  - "refactor"
+  - "perf"
+  - "deps-patch"
+  - "deps-minor"
+  - "deps-major"
+  - "lint-fix"
+  - "error-handling"
+  - "security"
+  - "ci-cd"
+
+challenge_vectors:
+  - "Does this break backwards compatibility?"
+  - "Could this mask a real bug instead of fixing it?"
+  - "Is this optimizing something that doesn't matter?"
+  - "Does this increase coupling between modules?"
+  - "Will this conflict with in-flight work on other branches?"
+  - "Is the test actually testing the right thing?"

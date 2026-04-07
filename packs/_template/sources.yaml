@@ -1,0 +1,10 @@
+# sources.yaml — Additional intelligence sources for this pack
+# These supplement the sources defined in pack.yaml.
+#
+# Example:
+# sources:
+#   - name: "custom-feed"
+#     type: "rss"
+#     schedule: "daily"
+#     description: "Custom RSS feed for monitoring"
+#     url: "https://example.com/feed.xml"

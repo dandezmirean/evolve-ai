@@ -1,0 +1,75 @@
+# pack.yaml — Target pack definition for evolve-ai
+# Copy this template directory and fill in the fields for your target.
+
+# name: short identifier (lowercase, hyphens ok)
+name: ""
+
+# description: one-line summary of what this pack evolves
+description: ""
+
+# scan_commands: shell commands that gather state about the target system
+# These run during the digest phase to build situational awareness.
+scan_commands:
+  - ""
+
+# health_checks: commands that verify the target is in a good state
+# Run before and after changes to detect regressions.
+# Each check has: name, command, expect (exit_code_0 | output_matches), value (regex for output_matches)
+health_checks:
+  - name: ""
+    command: ""
+    expect: "exit_code_0"
+
+# sources: intelligence feeds that inform the strategize phase
+# Types: rss, command, file
+sources:
+  - name: ""
+    type: "command"
+    schedule: "daily"
+    description: ""
+    command: ""
+
+# gap_framework: dimensions the agent evaluates for improvement opportunities
+gap_framework:
+  - ""
+
+# observation_types: categories of issues the agent looks for during analysis
+observation_types:
+  - ""
+
+# scorers: metrics that quantify target health before/after changes
+scorers:
+  heuristic:
+    - name: ""
+      command: ""
+      weight: 1
+      direction: "higher_is_better"
+  llm_judge:
+    enabled: true
+    prompt: "Evaluate whether this change improves the target system. Score 0.0-1.0."
+
+# safety_rules: hard constraints on what the agent must never do
+# never: absolute prohibitions
+# require_approval: conditions that trigger human review
+safety_rules:
+  never:
+    - "push to remote repository"
+    - "delete data without backup"
+    - "commit credentials or secrets"
+  require_approval:
+    - condition: "ambition >= 5"
+
+# reversibility: how changes can be undone
+# primary: git | snapshot | state-capture
+# side_effects: non-git changes and their undo commands
+reversibility:
+  primary: "git"
+  side_effects: []
+
+# commit_categories: allowed category tags for changes from this pack
+commit_categories:
+  - ""
+
+# challenge_vectors: adversarial questions the challenge phase asks about proposals
+challenge_vectors:
+  - ""

@@ -1,0 +1,120 @@
+name: "infrastructure"
+description: "Evolve server infrastructure — services, security, monitoring, automation"
+
+scan_commands:
+  - "free -h"
+  - "df -h /"
+  - "docker ps --format json 2>/dev/null || true"
+  - "systemctl list-units --state=running --type=service --no-pager"
+  - "crontab -l 2>/dev/null || true"
+  - "uname -a"
+
+health_checks:
+  - name: "system_responsive"
+    command: "uptime"
+    expect: "exit_code_0"
+  - name: "disk_ok"
+    command: "df / --output=pcent | tail -1 | tr -d ' %'"
+    expect: "output_matches"
+    value: "^[0-8][0-9]?$"
+  - name: "docker_running"
+    command: "docker ps -q | wc -l"
+    expect: "exit_code_0"
+
+sources:
+  - name: "security-advisories"
+    type: "rss"
+    schedule: "daily"
+    description: "OS security advisories"
+    url: ""
+  - name: "system-errors"
+    type: "command"
+    schedule: "daily"
+    command: "journalctl --since='24 hours ago' --priority=err --no-pager -q"
+    description: "System error log review"
+  - name: "docker-updates"
+    type: "command"
+    schedule: "weekly"
+    command: "docker images --format '{{.Repository}}:{{.Tag}}' | head -20"
+    description: "Check running container image versions"
+
+gap_framework:
+  - "monitored_conditions"
+  - "automated_responses"
+  - "failure_recovery"
+  - "security_posture"
+  - "resource_efficiency"
+  - "backup_coverage"
+  - "service_redundancy"
+
+observation_types:
+  - "service_failures"
+  - "resource_spikes"
+  - "cron_errors"
+  - "disk_growth"
+  - "stale_configs"
+  - "unmonitored_services"
+
+scorers:
+  heuristic:
+    - name: "uptime"
+      command: "uptime -s | xargs -I{} datediff {} now"
+      weight: 2
+      direction: "higher_is_better"
+    - name: "memory_available_pct"
+      command: "free | awk '/Mem:/ {printf \"%.0f\", $7/$2*100}'"
+      weight: 3
+      direction: "higher_is_better"
+    - name: "disk_available_pct"
+      command: "df / --output=avail,size | tail -1 | awk '{printf \"%.0f\", $1/$2*100}'"
+      weight: 2
+      direction: "higher_is_better"
+    - name: "failed_services"
+      command: "systemctl --failed --no-pager --no-legend | wc -l"
+      weight: 3
+      direction: "lower_is_better"
+  llm_judge:
+    enabled: true
+    prompt: "Evaluate whether this infrastructure change improves reliability, security, and resource efficiency. Score 0.0-1.0."
+
+safety_rules:
+  never:
+    - "expose ports to public internet"
+    - "disable firewall or security services"
+    - "delete data volumes or databases"
+    - "modify SSH to allow password authentication"
+    - "run unverified scripts from the internet"
+    - "store credentials in plain text"
+  require_approval:
+    - condition: "category == 'security-config'"
+    - condition: "ambition >= 5"
+
+reversibility:
+  primary: "git"
+  side_effects:
+    - type: "apt"
+      undo: "apt remove -y {package}"
+    - type: "systemd"
+      undo: "systemctl stop {service} && systemctl disable {service}"
+    - type: "cron"
+      undo: "crontab restore from backup"
+    - type: "docker"
+      undo: "docker compose -f {compose_file} down {service}"
+
+commit_categories:
+  - "service-add"
+  - "service-mod"
+  - "security"
+  - "monitoring"
+  - "cron-fix"
+  - "backup"
+  - "resource-optimization"
+  - "automation"
+  - "infra"
+
+challenge_vectors:
+  - "Could this cause service downtime?"
+  - "Does this create a single point of failure?"
+  - "What happens if this runs on a system with different specs?"
+  - "Could this fill the disk or exhaust memory?"
+  - "Is this change idempotent? What if it runs twice?"
