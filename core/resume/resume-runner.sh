@@ -133,16 +133,19 @@ resume_session() {
             local injections_dir="$evolve_root/resume-context/injections"
             mkdir -p "$injections_dir"
             local inject_file="$injections_dir/${change_id}.json"
-            cat > "$inject_file" <<INJEOF
-{
-  "id": "${change_id}-redirect",
-  "source": "human",
-  "status": "pending",
-  "description": "${new_framing}",
-  "origin_context": "${context_id}",
-  "created": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-}
-INJEOF
+            jq -n \
+                --arg id "${change_id}-redirect" \
+                --arg desc "$new_framing" \
+                --arg origin "$context_id" \
+                --arg created "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
+                '{
+                    id: $id,
+                    source: "human",
+                    status: "pending",
+                    description: $desc,
+                    origin_context: $origin,
+                    created: $created
+                }' > "$inject_file"
             echo ""
             echo "Pool injection created: $inject_file"
             echo "This will be picked up on the next pipeline run."
@@ -155,16 +158,19 @@ INJEOF
             local injections_dir="$evolve_root/resume-context/injections"
             mkdir -p "$injections_dir"
             local inject_file="$injections_dir/${change_id}.json"
-            cat > "$inject_file" <<INJEOF
-{
-  "id": "${change_id}-expand",
-  "source": "human",
-  "status": "pending",
-  "description": "Deep research: ${research_topic}",
-  "origin_context": "${context_id}",
-  "created": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-}
-INJEOF
+            jq -n \
+                --arg id "${change_id}-expand" \
+                --arg desc "Deep research: $research_topic" \
+                --arg origin "$context_id" \
+                --arg created "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
+                '{
+                    id: $id,
+                    source: "human",
+                    status: "pending",
+                    description: $desc,
+                    origin_context: $origin,
+                    created: $created
+                }' > "$inject_file"
             echo ""
             echo "Research injection created: $inject_file"
             echo "The pipeline will research this on the next run."
@@ -177,16 +183,19 @@ INJEOF
             local injections_dir="$evolve_root/resume-context/injections"
             mkdir -p "$injections_dir"
             local inject_file="$injections_dir/${change_id}.json"
-            cat > "$inject_file" <<INJEOF
-{
-  "id": "${change_id}-modified",
-  "source": "human",
-  "status": "pending",
-  "description": "${modified_scope}",
-  "origin_context": "${context_id}",
-  "created": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-}
-INJEOF
+            jq -n \
+                --arg id "${change_id}-modified" \
+                --arg desc "$modified_scope" \
+                --arg origin "$context_id" \
+                --arg created "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
+                '{
+                    id: $id,
+                    source: "human",
+                    status: "pending",
+                    description: $desc,
+                    origin_context: $origin,
+                    created: $created
+                }' > "$inject_file"
             echo ""
             echo "Modified injection created: $inject_file"
             echo "The pipeline will use this modified scope on the next run."
