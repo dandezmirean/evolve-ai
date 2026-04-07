@@ -79,10 +79,65 @@ test_stale_lock_cleanup() {
 }
 
 # -----------------------------------------------------------------------
+# test_lock_file_contains_timestamp
+# lock file written by acquire_lock has two fields: PID and timestamp
+# -----------------------------------------------------------------------
+test_lock_file_contains_timestamp() {
+    echo "test_lock_file_contains_timestamp"
+    setup_test_env
+
+    local lock_file="$TEST_TMPDIR/test.lock"
+    echo "$$ $(date +%s)" > "$lock_file"
+    local parts
+    parts=$(wc -w < "$lock_file")
+    assert_eq "2" "$parts" "lock file contains PID and timestamp"
+
+    teardown_test_env
+}
+
+# -----------------------------------------------------------------------
+# test_lock_is_stale_old_lock
+# lock_is_stale returns true (exit 0) when timestamp exceeds max_age
+# -----------------------------------------------------------------------
+test_lock_is_stale_old_lock() {
+    echo "test_lock_is_stale_old_lock"
+    setup_test_env
+
+    local lock_file="$TEST_TMPDIR/test.lock"
+    local old_ts=$(( $(date +%s) - 8000 ))
+    echo "99999 $old_ts" > "$lock_file"
+
+    lock_is_stale "$lock_file" 7200
+    assert_eq "0" "$?" "lock_is_stale returns true for old lock"
+
+    teardown_test_env
+}
+
+# -----------------------------------------------------------------------
+# test_lock_is_stale_fresh_lock
+# lock_is_stale returns false (exit 1) for a recently written lock
+# -----------------------------------------------------------------------
+test_lock_is_stale_fresh_lock() {
+    echo "test_lock_is_stale_fresh_lock"
+    setup_test_env
+
+    local lock_file="$TEST_TMPDIR/test.lock"
+    echo "99999 $(date +%s)" > "$lock_file"
+
+    lock_is_stale "$lock_file" 7200
+    assert_eq "1" "$?" "lock_is_stale returns false for recent lock"
+
+    teardown_test_env
+}
+
+# -----------------------------------------------------------------------
 # Run all tests
 # -----------------------------------------------------------------------
 test_acquire_and_release
 test_lock_blocks_second_acquire
 test_stale_lock_cleanup
+test_lock_file_contains_timestamp
+test_lock_is_stale_old_lock
+test_lock_is_stale_fresh_lock
 
 report_results
