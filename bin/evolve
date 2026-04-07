@@ -1,0 +1,207 @@
+#!/usr/bin/env bash
+# bin/evolve — CLI entry point for evolve-ai
+set -euo pipefail
+
+EVOLVE_BIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+EVOLVE_ROOT="$(cd "$EVOLVE_BIN_DIR/.." && pwd)"
+
+source "$EVOLVE_ROOT/core/orchestrator.sh"
+
+VERSION="0.1.0"
+
+# ---------------------------------------------------------------------------
+# usage
+# Prints help text listing all commands.
+# ---------------------------------------------------------------------------
+usage() {
+    cat <<EOF
+evolve-ai v$VERSION — autonomous self-improvement pipeline
+
+Usage: evolve <command> [options]
+
+Commands:
+  init                  Initialise a new evolve-ai project (Plan 3)
+  run                   Run the autonomous pipeline
+  run --directed        Run in directed mode (user-prompted task)
+  status                Show pool stats, lock status, and next scheduled run
+  history               Print the changelog
+  resume                Resume an interrupted pipeline run (Plan 6)
+  pack list             List available packs
+  pack edit <name>      Edit a pack
+  pack create <name>    Create a new pack
+  meta run              Run the meta-improvement pipeline
+  meta status           Show meta pipeline status
+  config                Show current configuration
+  version               Print version string
+  help                  Show this help text
+
+EOF
+}
+
+# ---------------------------------------------------------------------------
+# cmd_version
+# ---------------------------------------------------------------------------
+cmd_version() {
+    echo "evolve-ai v$VERSION"
+}
+
+# ---------------------------------------------------------------------------
+# cmd_run [--directed]
+# ---------------------------------------------------------------------------
+cmd_run() {
+    local mode="autonomous"
+    if [[ "${1:-}" == "--directed" ]]; then
+        mode="directed"
+    fi
+    run_pipeline "$EVOLVE_ROOT" "$mode"
+}
+
+# ---------------------------------------------------------------------------
+# cmd_status
+# ---------------------------------------------------------------------------
+cmd_status() {
+    # Find latest workspace dir
+    local workspace_base="$EVOLVE_ROOT/workspace"
+    if [[ ! -d "$workspace_base" ]] || [[ -z "$(ls -A "$workspace_base" 2>/dev/null)" ]]; then
+        echo "No runs yet."
+        return 0
+    fi
+
+    local latest_ws
+    latest_ws="$(ls -1d "$workspace_base"/*/  2>/dev/null | sort | tail -1)"
+    latest_ws="${latest_ws%/}"
+
+    echo "Latest workspace: $latest_ws"
+
+    local pool_file="$latest_ws/pool.json"
+    if [[ ! -f "$pool_file" ]]; then
+        echo "No pool.json found in latest workspace."
+    else
+        local total landed reverted killed active
+        total="$(jq 'length' "$pool_file")"
+        landed="$(jq '[.[] | select(.status == "landed" or .status == "landed-pending-kpi")] | length' "$pool_file")"
+        reverted="$(jq '[.[] | select(.status == "reverted")] | length' "$pool_file")"
+        killed="$(jq '[.[] | select(.status == "killed")] | length' "$pool_file")"
+        active="$(jq '[.[] | select(.status != "landed" and .status != "landed-pending-kpi" and .status != "reverted" and .status != "killed")] | length' "$pool_file")"
+
+        echo "Pool stats:"
+        echo "  total:    $total"
+        echo "  landed:   $landed"
+        echo "  reverted: $reverted"
+        echo "  killed:   $killed"
+        echo "  active:   $active"
+    fi
+
+    # Lock status
+    local lock_file="$EVOLVE_DEFAULT_LOCK"
+    if is_locked "$lock_file"; then
+        local pid
+        pid="$(lock_owner_pid "$lock_file")"
+        echo "Lock: HELD by PID $pid"
+    else
+        echo "Lock: free"
+    fi
+
+    # Next scheduled run from crontab
+    local next_run
+    next_run="$(crontab -l 2>/dev/null | grep -i 'evolve' | head -1 || true)"
+    if [[ -n "$next_run" ]]; then
+        echo "Next scheduled run: $next_run"
+    else
+        echo "Next scheduled run: not scheduled"
+    fi
+}
+
+# ---------------------------------------------------------------------------
+# cmd_history
+# ---------------------------------------------------------------------------
+cmd_history() {
+    local changelog="$EVOLVE_ROOT/memory/changelog.md"
+    if [[ -f "$changelog" ]]; then
+        cat "$changelog"
+    else
+        echo "No history yet."
+    fi
+}
+
+# ---------------------------------------------------------------------------
+# cmd_init
+# ---------------------------------------------------------------------------
+cmd_init() {
+    echo "evolve init provided by Plan 3"
+}
+
+# ---------------------------------------------------------------------------
+# cmd_resume
+# ---------------------------------------------------------------------------
+cmd_resume() {
+    echo "evolve resume provided by Plan 6"
+}
+
+# ---------------------------------------------------------------------------
+# main — command dispatcher
+# ---------------------------------------------------------------------------
+main() {
+    local cmd="${1:-help}"
+    shift || true
+
+    case "$cmd" in
+        version)
+            cmd_version
+            ;;
+        help|--help|-h)
+            usage
+            ;;
+        run)
+            cmd_run "${1:-}"
+            ;;
+        status)
+            cmd_status
+            ;;
+        history)
+            cmd_history
+            ;;
+        init)
+            cmd_init
+            ;;
+        resume)
+            cmd_resume
+            ;;
+        pack)
+            local sub="${1:-}"
+            shift || true
+            case "$sub" in
+                list)   echo "evolve pack list: not yet implemented" ;;
+                edit)   echo "evolve pack edit: not yet implemented" ;;
+                create) echo "evolve pack create: not yet implemented" ;;
+                *)      echo "Unknown pack subcommand: $sub" >&2; usage; exit 1 ;;
+            esac
+            ;;
+        meta)
+            local sub="${1:-}"
+            shift || true
+            case "$sub" in
+                run)    echo "evolve meta run: not yet implemented" ;;
+                status) echo "evolve meta status: not yet implemented" ;;
+                *)      echo "Unknown meta subcommand: $sub" >&2; usage; exit 1 ;;
+            esac
+            ;;
+        config)
+            local config_file="$EVOLVE_ROOT/config/evolve.yaml"
+            if [[ -f "$config_file" ]]; then
+                load_config "$config_file"
+                printf '%s\n' "$_CONFIG_CACHE"
+            else
+                echo "No config file found at $config_file"
+            fi
+            ;;
+        *)
+            echo "evolve: unknown command '$cmd'" >&2
+            echo >&2
+            usage >&2
+            exit 1
+            ;;
+    esac
+}
+
+main "$@"
