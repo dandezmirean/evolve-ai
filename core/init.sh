@@ -632,6 +632,27 @@ run_init() {
     echo "Generating configuration..."
     generate_config "$evolve_root"
 
+    # Generate .gitignore if it doesn't exist
+    local gitignore_file="$evolve_root/.gitignore"
+    if [[ ! -f "$gitignore_file" ]]; then
+        cat > "$gitignore_file" <<'GITIGNORE'
+# Secrets
+.env
+.env.*
+*.key
+*.pem
+*.p12
+credentials.*
+
+# Runtime
+.evolve-lock
+.evolve-meta-lock
+workspace/
+resume-context/
+GITIGNORE
+        echo "  Created .gitignore"
+    fi
+
     # 11. Initialize memory
     init_memory "$evolve_root"
 

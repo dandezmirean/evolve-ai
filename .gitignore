@@ -1,6 +1,17 @@
+# Secrets
+.env
+.env.*
+*.key
+*.pem
+*.p12
+credentials.*
+
 # Runtime
 *.lock
+.evolve-lock
+.evolve-meta-lock
 workspace/
+resume-context/
 /memory/
 /inbox/
 /resume-context/

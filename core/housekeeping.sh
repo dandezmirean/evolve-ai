@@ -91,7 +91,14 @@ _housekeeping_git_snapshot() {
     today="$(date +%Y-%m-%d)"
     tag_name="evolve-${today}-pre"
 
-    git -C "$evolve_root" add -A || true
+    git -C "$evolve_root" add -u || true
+
+    # Warn if snapshot is unusually large
+    local staged_lines
+    staged_lines="$(git -C "$evolve_root" diff --cached --stat | tail -1 | grep -oE '[0-9]+ insertion' | grep -oE '[0-9]+' || echo 0)"
+    if (( staged_lines > 1000 )); then
+        echo "[housekeeping] Warning: snapshot includes $staged_lines changed lines — verify .gitignore" >&2
+    fi
 
     # Only commit if there are staged changes
     if ! git -C "$evolve_root" diff --cached --quiet 2>/dev/null; then
