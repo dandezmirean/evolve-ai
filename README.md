@@ -151,7 +151,13 @@ That's it. Your first autonomous improvement cycle runs immediately.
 - jq
 - curl
 - md5sum (coreutils)
-- An LLM provider (Claude recommended)
+- An LLM provider
+
+### LLM provider
+
+evolve-ai is LLM-agnostic — it works with any provider that can take a prompt and return structured text. That said, the pipeline is compute-hungry. Each run invokes the LLM 8+ times across phases, and complex targets can run 20+ invocations per cycle with sub-invocations for validation and scoring. The more capable the model and the more generous the rate limits, the better the results.
+
+The recommended setup is **Claude with a Max plan** — unlimited use on the most capable model, no per-token billing, and rate limits that comfortably handle daily autonomous runs. During `evolve init`, select "Claude via claude.ai (Max plan)" as your provider and authenticate via `claude.ai` OAuth. No API key needed.
 
 ---
 

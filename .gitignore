@@ -16,3 +16,7 @@ config/evolve.yaml
 
 # Logs
 *.log
+
+# Claude Code
+CLAUDE.md
+.claude/
