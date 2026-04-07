@@ -581,8 +581,8 @@ generate_custom_genome() {
     cp "$template_dir/genome.yaml" "$genome_dir/genome.yaml"
 
     # Fill in name and description
-    sed -i "s/^name: .*/name: \"$genome_name\"/" "$genome_dir/genome.yaml"
-    sed -i "s/^description: .*/description: \"$description\"/" "$genome_dir/genome.yaml"
+    yq -i ".name = \"$genome_name\"" "$genome_dir/genome.yaml"
+    DESC="$description" yq -i '.description = strenv(DESC)' "$genome_dir/genome.yaml"
 
     echo "" >&2
     echo "  Custom genome '$genome_name' created at $genome_dir" >&2
