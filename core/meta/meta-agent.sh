@@ -15,7 +15,7 @@ if ! declare -f acquire_lock >/dev/null 2>&1; then
     source "$_META_CORE_DIR/lock.sh"
 fi
 
-EVOLVE_META_LOCK="/tmp/evolve-ai-meta.lock"
+EVOLVE_META_LOCK="${EVOLVE_ROOT:-.}/.evolve-meta-lock"
 
 # ---------------------------------------------------------------------------
 # meta_run <evolve_root>

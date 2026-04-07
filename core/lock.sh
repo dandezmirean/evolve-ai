@@ -1,33 +1,34 @@
 #!/usr/bin/env bash
-# core/lock.sh — global lock management with PID-based stale detection
+# core/lock.sh — global lock management with flock-based atomic locking
 
-EVOLVE_DEFAULT_LOCK="/tmp/evolve-ai.lock"
+EVOLVE_DEFAULT_LOCK="${EVOLVE_ROOT:-.}/.evolve-lock"
+EVOLVE_LOCK_FD=9
 
 # acquire_lock [lock_file]
-# Creates lock file with current PID and timestamp.
-# Returns 1 if locked by a live process, 0 on success.
+# Uses flock for atomic lock acquisition. Writes PID + timestamp for diagnostics.
+# Returns 1 if locked by another process, 0 on success.
 acquire_lock() {
     local lock_file="${1:-$EVOLVE_DEFAULT_LOCK}"
 
-    if [[ -f "$lock_file" ]]; then
-        local existing_pid
-        existing_pid="$(awk '{print $1}' "$lock_file" 2>/dev/null)"
-        if [[ -n "$existing_pid" ]] && kill -0 "$existing_pid" 2>/dev/null; then
-            # Lock held by a live process
-            return 1
-        fi
-        # Stale lock — remove it
-        rm -f "$lock_file"
+    # Open FD for locking (create file if needed)
+    eval "exec ${EVOLVE_LOCK_FD}>\"$lock_file\""
+
+    if ! flock -n "$EVOLVE_LOCK_FD"; then
+        return 1
     fi
 
-    echo "$$ $(date +%s)" > "$lock_file"
+    # Write PID + timestamp for diagnostics
+    echo "$$ $(date +%s)" >&${EVOLVE_LOCK_FD}
+
     return 0
 }
 
 # release_lock [lock_file]
-# Removes the lock file.
+# Releases the flock and removes the lock file.
 release_lock() {
     local lock_file="${1:-$EVOLVE_DEFAULT_LOCK}"
+    flock -u "$EVOLVE_LOCK_FD" 2>/dev/null || true
+    eval "exec ${EVOLVE_LOCK_FD}>&-" 2>/dev/null || true
     rm -f "$lock_file"
 }
 
@@ -40,13 +41,19 @@ is_locked() {
         return 1
     fi
 
-    local existing_pid
-    existing_pid="$(awk '{print $1}' "$lock_file" 2>/dev/null)"
-    if [[ -n "$existing_pid" ]] && kill -0 "$existing_pid" 2>/dev/null; then
-        return 0
-    fi
+    # Try to acquire on a different FD to test
+    local test_result
+    (
+        exec 8>"$lock_file"
+        flock -n 8 && exit 0 || exit 1
+    )
+    test_result=$?
 
-    return 1
+    if [[ $test_result -eq 0 ]]; then
+        return 1  # NOT locked (we could acquire)
+    else
+        return 0  # locked
+    fi
 }
 
 # lock_owner_pid [lock_file]
@@ -58,7 +65,6 @@ lock_owner_pid() {
 
 # lock_is_stale [lock_file] [max_age_seconds]
 # Returns 0 (true) if the lock file exists and its timestamp is older than max_age.
-# Returns 1 (false) if the lock is fresh, missing, or has no timestamp.
 lock_is_stale() {
     local lock_file="$1"
     local max_age="${2:-7200}"
@@ -67,8 +73,6 @@ lock_is_stale() {
 
     local lock_ts
     lock_ts=$(awk '{print $2}' "$lock_file" 2>/dev/null || echo "")
-
-    # No timestamp (old format) — can't determine staleness by age
     [ -z "$lock_ts" ] && return 1
 
     local now age

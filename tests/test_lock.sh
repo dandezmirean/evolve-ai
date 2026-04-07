@@ -42,10 +42,14 @@ test_lock_blocks_second_acquire() {
 
     acquire_lock "$lock_file"
 
-    # Second acquire must fail (return 1) because PID $$ is alive
-    acquire_lock "$lock_file"
-    local second_rc=$?
-    assert_eq "1" "$second_rc" "second acquire returns 1 while first is held"
+    # Second acquire from a SUBSHELL must fail because flock is held by parent
+    local second_rc=0
+    (
+        exec 9>"$lock_file"
+        flock -n 9 && exit 0 || exit 1
+    ) || second_rc=$?
+
+    assert_eq "1" "$second_rc" "second acquire from subshell returns 1 while first is held"
 
     release_lock "$lock_file"
     teardown_test_env
@@ -61,11 +65,11 @@ test_stale_lock_cleanup() {
     setup_test_env
 
     local lock_file="$TEST_TMPDIR/test.lock"
-    local dead_pid=99999999
 
-    # Write a stale lock manually
-    echo "$dead_pid" > "$lock_file"
+    # Write a stale lock file (no flock held — simulates dead process)
+    echo "99999999 $(date +%s)" > "$lock_file"
 
+    # acquire should succeed because no flock is actually held
     acquire_lock "$lock_file"
     local rc=$?
     assert_eq "0" "$rc" "acquire succeeds over stale lock"
