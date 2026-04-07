@@ -31,6 +31,10 @@ provider_invoke() {
         openai)
             openai_invoke "$prompt_file" "$max_turns" "$workspace" "$phase_name"
             ;;
+        custom)
+            echo "[provider] Custom provider not configured" >&2
+            return 1
+            ;;
         *)
             echo "[provider] Unknown provider type: $provider_type" >&2
             return 1
@@ -74,6 +78,10 @@ provider_check() {
             ;;
         openai)
             openai_check
+            ;;
+        custom)
+            echo "[provider] Custom provider not configured" >&2
+            return 1
             ;;
         *)
             echo "[provider] Unknown provider type: $provider_type" >&2

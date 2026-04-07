@@ -65,6 +65,39 @@ validate_genome() {
         fi
     done
 
+    # Schema shape validation using yq
+    # scan_commands must be a list of strings (not maps)
+    if yq 'has("scan_commands")' "$genome_yaml" 2>/dev/null | grep -q "true"; then
+        local bad_items
+        bad_items="$(yq '.scan_commands[] | tag' "$genome_yaml" 2>/dev/null | grep -v '!!str' | head -1 || true)"
+        if [[ -n "$bad_items" ]]; then
+            echo "validate_genome: scan_commands contains non-string items (found $bad_items) in $genome_yaml" >&2
+            errors=$(( errors + 1 ))
+        fi
+    fi
+
+    # health_checks entries must have name, command, expect
+    if yq 'has("health_checks")' "$genome_yaml" 2>/dev/null | grep -q "true"; then
+        local hc_count
+        hc_count="$(yq '.health_checks | length' "$genome_yaml" 2>/dev/null || echo 0)"
+        local j=0
+        while (( j < hc_count )); do
+            local hc_name
+            hc_name="$(yq ".health_checks[$j].name // \"\"" "$genome_yaml" 2>/dev/null)"
+            if [[ -z "$hc_name" || "$hc_name" == "null" ]]; then
+                echo "validate_genome: health_checks[$j] missing 'name' field in $genome_yaml" >&2
+                errors=$(( errors + 1 ))
+            fi
+            local hc_cmd_check
+            hc_cmd_check="$(yq ".health_checks[$j] | has(\"command\")" "$genome_yaml" 2>/dev/null)"
+            if [[ "$hc_cmd_check" != "true" ]]; then
+                echo "validate_genome: health_checks[$j] missing 'command' field in $genome_yaml" >&2
+                errors=$(( errors + 1 ))
+            fi
+            (( j++ )) || true
+        done
+    fi
+
     # Restore previous config cache
     _CONFIG_CACHE="$saved_cache"
 

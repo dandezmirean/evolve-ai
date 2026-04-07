@@ -8,11 +8,11 @@ scan_commands:
   - "systemctl list-units --state=running --type=service --no-pager"
   - "crontab -l 2>/dev/null || true"
   - "uname -a"
-  - cpu_info: "lscpu | grep -E 'Model name|CPU\\(s\\)|Thread|Architecture'"
-  - memory_breakdown: "free -h && echo '---' && ps aux --sort=-%mem | head -10"
-  - disk_by_mount: "df -h --output=target,size,used,avail,pcent | sort -k5 -rn"
-  - cron_density: "crontab -l 2>/dev/null | grep -v '^#' | grep -v '^$' | wc -l"
-  - listening_ports: "ss -tlnp 2>/dev/null | tail -n +2"
+  - "lscpu | grep -E 'Model name|CPU\\(s\\)|Thread|Architecture'"
+  - "free -h && echo '---' && ps aux --sort=-%mem | head -10"
+  - "df -h --output=target,size,used,avail,pcent | sort -k5 -rn"
+  - "crontab -l 2>/dev/null | grep -v '^#' | grep -v '^$' | wc -l"
+  - "ss -tlnp 2>/dev/null | tail -n +2"
 
 health_checks:
   - name: "system_responsive"

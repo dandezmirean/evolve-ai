@@ -176,9 +176,8 @@ _select_provider() {
     echo ""
     echo "Which LLM provider should evolve-ai use?"
     echo "  [1] Claude via claude.ai (Max plan, recommended)"
-    echo "  [2] Claude via API key"
-    echo "  [3] OpenAI-compatible API"
-    echo "  [4] Custom provider"
+    echo "  [2] Claude via API key (not yet implemented)"
+    echo "  [3] OpenAI-compatible API (not yet implemented)"
     echo ""
 
     local choice
@@ -186,9 +185,18 @@ _select_provider() {
 
     case "$choice" in
         1) PROVIDER_TYPE="claude-max" ;;
-        2) PROVIDER_TYPE="claude-api" ;;
-        3) PROVIDER_TYPE="openai" ;;
-        4) PROVIDER_TYPE="custom" ;;
+        2)
+            echo "  Warning: claude-api provider is a stub and will fail at runtime." >&2
+            local confirm
+            read -rp "  Continue anyway? (y/N) " confirm
+            [[ "$confirm" =~ ^[Yy] ]] && PROVIDER_TYPE="claude-api" || PROVIDER_TYPE="claude-max"
+            ;;
+        3)
+            echo "  Warning: openai provider is a stub and will fail at runtime." >&2
+            local confirm
+            read -rp "  Continue anyway? (y/N) " confirm
+            [[ "$confirm" =~ ^[Yy] ]] && PROVIDER_TYPE="openai" || PROVIDER_TYPE="claude-max"
+            ;;
         *) PROVIDER_TYPE="claude-max" ;;
     esac
 
