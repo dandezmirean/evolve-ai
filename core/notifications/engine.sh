@@ -95,6 +95,17 @@ load_notification_config() {
                 current_param1="${current_param1%\'}"
                 current_param1="${current_param1#\'}"
             fi
+            # bot_token_env (env var reference — resolve it)
+            if [[ "$stripped" =~ ^bot_token_env:[[:space:]]*(.+) ]]; then
+                local env_name="${BASH_REMATCH[1]}"
+                env_name="${env_name%\"}"
+                env_name="${env_name#\"}"
+                env_name="${env_name%\'}"
+                env_name="${env_name#\'}"
+                if [[ -z "$current_param1" ]]; then
+                    current_param1="${!env_name:-}"
+                fi
+            fi
             # chat_id
             if [[ "$stripped" =~ ^chat_id:[[:space:]]*(.+) ]]; then
                 current_param2="${BASH_REMATCH[1]}"
@@ -103,6 +114,17 @@ load_notification_config() {
                 current_param2="${current_param2%\'}"
                 current_param2="${current_param2#\'}"
             fi
+            # chat_id_env
+            if [[ "$stripped" =~ ^chat_id_env:[[:space:]]*(.+) ]]; then
+                local env_name="${BASH_REMATCH[1]}"
+                env_name="${env_name%\"}"
+                env_name="${env_name#\"}"
+                env_name="${env_name%\'}"
+                env_name="${env_name#\'}"
+                if [[ -z "$current_param2" ]]; then
+                    current_param2="${!env_name:-}"
+                fi
+            fi
             # webhook_url (used by slack and discord)
             if [[ "$stripped" =~ ^webhook_url:[[:space:]]*(.+) ]]; then
                 current_param1="${BASH_REMATCH[1]}"
@@ -110,6 +132,17 @@ load_notification_config() {
                 current_param1="${current_param1#\"}"
                 current_param1="${current_param1%\'}"
                 current_param1="${current_param1#\'}"
+            fi
+            # webhook_url_env
+            if [[ "$stripped" =~ ^webhook_url_env:[[:space:]]*(.+) ]]; then
+                local env_name="${BASH_REMATCH[1]}"
+                env_name="${env_name%\"}"
+                env_name="${env_name#\"}"
+                env_name="${env_name%\'}"
+                env_name="${env_name#\'}"
+                if [[ -z "$current_param1" ]]; then
+                    current_param1="${!env_name:-}"
+                fi
             fi
         fi
     done < "$config_file"

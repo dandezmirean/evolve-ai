@@ -154,6 +154,42 @@ YAML
 }
 
 # ---------------------------------------------------------------------------
+# test_load_notification_config_env_vars
+# ---------------------------------------------------------------------------
+test_load_notification_config_env_vars() {
+    echo "test_load_notification_config_env_vars"
+    setup_test_env
+
+    local yaml="$TEST_TMPDIR/evolve.yaml"
+    cat > "$yaml" <<'YAML'
+version: "1.0.0"
+
+notifications:
+  - type: "telegram"
+    bot_token_env: "TEST_BOT_TOKEN"
+    chat_id_env: "TEST_CHAT_ID"
+  - type: "slack"
+    webhook_url_env: "TEST_SLACK_WEBHOOK"
+
+provider:
+  type: "claude-max"
+YAML
+
+    export TEST_BOT_TOKEN="my-secret-token"
+    export TEST_CHAT_ID="12345"
+    export TEST_SLACK_WEBHOOK="https://hooks.slack.com/secret"
+
+    load_notification_config "$yaml"
+
+    assert_eq 2 "${#_NOTIFICATION_ENTRIES[@]}" "parsed 2 notification entries"
+    assert_eq "telegram|my-secret-token|12345" "${_NOTIFICATION_ENTRIES[0]}" "telegram env vars resolved"
+    assert_eq "slack|https://hooks.slack.com/secret|" "${_NOTIFICATION_ENTRIES[1]}" "slack env var resolved"
+
+    unset TEST_BOT_TOKEN TEST_CHAT_ID TEST_SLACK_WEBHOOK
+    teardown_test_env
+}
+
+# ---------------------------------------------------------------------------
 # Run all tests
 # ---------------------------------------------------------------------------
 test_notify_stdout_outputs_with_timestamp
@@ -162,5 +198,6 @@ test_notify_default_stdout_when_no_config
 test_notify_no_crash_on_empty_entries
 test_load_notification_config_multiple_providers
 test_load_notification_config_notifications_at_end_of_file
+test_load_notification_config_env_vars
 
 report_results
