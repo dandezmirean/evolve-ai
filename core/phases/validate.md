@@ -16,6 +16,41 @@ You are the **Validate** phase of the evolve-ai pipeline. Your job is to verify 
 
 ---
 
+## Three-Tier Validation Overview
+
+Every implemented entry passes through a tiered system. Understand the purpose of each tier before executing:
+
+| Tier | Label | When Applied | Purpose |
+|------|-------|--------------|---------|
+| 1 | Static | Always (all ambition levels) | Catch syntax errors, secret leaks, permission issues, git scope violations before the system runs anything |
+| 2 | Functional | Always (all ambition levels) | Verify the genome's health checks pass, dry-runs succeed, config is parseable — the system runs and the change doesn't break it |
+| 3 | Intelligent | Conditional — ambition >= 4, OR probation, RAM-gated | Edge cases, cross-component interactions, resilience scoring 1-5 — only when the change is high-stakes and resources allow |
+
+Tier 3 is **conditional on available resources**. Check RAM before entering Tier 3. If insufficient, skip and note it — the finalize phase accounts for this.
+
+---
+
+## Guard Checks vs Impact Signals
+
+These are two distinct categories of evidence. Do not conflate them.
+
+**Guard checks** answer: *"Did it break?"*
+- Result: PASS or FAIL
+- Applies to: syntax validity, no committed secrets, correct file permissions, git scope (only expected files changed), genome health checks, functional tests
+- A guard FAIL means the change is unsafe to land regardless of how beneficial it appears
+
+**Impact signals** answer: *"Did it improve?"*
+- Result: positive / neutral / negative / unmeasured
+- Applies to: KPI movement, observed behavior change, qualitative assessment of benefit
+- Impact is informational — it informs the finalize phase's decision, but does not override the guard
+
+**Decision rules:**
+- Guard PASS + unmeasured impact = **acceptable — land it**. Not every change has measurable immediate impact. If it didn't break anything, the finalize phase can decide.
+- Guard FAIL = **revert regardless of impact**. A change that breaks something but shows positive metrics is still dangerous — the metrics may be misleading, the break may be subtle, or the improvement may be coincidental.
+- Guard PASS + negative impact = flag for finalize, do NOT auto-revert from validate. The finalize phase applies the full decision table.
+
+---
+
 ## Tiered Validation
 
 Every implemented entry goes through validation tiers based on its ambition level. Higher tiers include all checks from lower tiers.

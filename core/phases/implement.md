@@ -107,22 +107,39 @@ If ANY of the files being modified are inside the `{{EVOLVE_ROOT}}` directory (i
 - This flags the change for extra scrutiny in the validation phase.
 - Add a history entry: `"event": "self-mod-flagged", "detail": "Change modifies evolve-ai internals"`.
 
-### Step 6: Git Commit
+### Step 6: Git Commit — Commit-Per-Change Pattern
+
+Each pool entry = exactly one atomic commit. Never bundle multiple pool changes into one commit.
+
 1. Stage ONLY the specific files that were changed:
    ```bash
    git -C <target_root> add <file1> <file2> ...
    ```
    **NEVER use `git add -A` or `git add .`** — only add the specific files for this change.
 
-2. Commit with a structured message:
+2. Commit with the structured message format:
    ```
-   <category>: <concise description>
+   experiment(<category>): <concise description>
 
    Pool-ID: <entry_id>
    Ambition: <ambition_score>
    ```
 
+   Valid categories for `<category>`:
+   | Category | Use for |
+   |----------|---------|
+   | `script-mod` | Modifying an existing script |
+   | `cron-fix` | Adding, removing, or fixing a cron job |
+   | `prompt-mod` | Modifying an LLM prompt or phase template |
+   | `new-agent` | Adding a new agent or service |
+   | `cross-agent` | Changes spanning multiple agents |
+   | `package-install` | Installing system or language packages |
+   | `infra` | Infrastructure, Docker, systemd, networking |
+   | `self-mod` | Modifying evolve-ai's own code or config |
+   | `config` | Config file changes not covered above |
+
 3. Record the commit hash.
+4. Update the pool entry's `commit_hash` field immediately after recording it.
 
 ### Step 7: Update Records
 1. Update `rollback-manifest.json` with the actual commit hash and undo command.
@@ -131,6 +148,47 @@ If ANY of the files being modified are inside the `{{EVOLVE_ROOT}}` directory (i
    - Set status to `implemented`.
    - Add history entry: `"event": "implemented", "detail": "<category>: <description>, hash: <short_hash>"`.
 3. Write implementation details to the log.
+
+---
+
+## Rollback Manifest — Non-Git Side Effects
+
+The `rollback-manifest.json` file handles two categories of rollback:
+
+1. **Git changes** — handled via `git revert <commit_hash>`. No manifest entry needed beyond the commit hash in the pool entry.
+2. **Non-git side effects** — actions that git cannot undo (package installs, cron modifications outside version control, service state changes, global npm/pip installs). These MUST be registered in the manifest.
+
+For any change with non-git side effects, add a structured rollback entry:
+
+```json
+{
+  "id": "<pool_entry_id>",
+  "description": "<what was done>",
+  "commit_hash": "<git_commit_hash>",
+  "rollback_steps": [
+    {"type": "apt_remove", "packages": ["<package_name>"]},
+    {"type": "npm_uninstall_global", "packages": ["<package_name>"]},
+    {"type": "cron_restore", "cron_file": "<path>", "backup_path": "<backup_path>"},
+    {"type": "service_stop", "service": "<systemd_service_name>"},
+    {"type": "file_delete", "path": "<absolute_path>"}
+  ],
+  "registered_at": "<ISO-8601>"
+}
+```
+
+Valid rollback step types:
+
+| Type | Reverses |
+|------|----------|
+| `apt_remove` | `apt install <pkg>` |
+| `npm_uninstall_global` | `npm install -g <pkg>` |
+| `cron_restore` | Manual crontab edits (requires a backup to have been taken before the change) |
+| `service_stop` | `systemctl enable` / `systemctl start` for a new service |
+| `file_delete` | Creation of a new file outside the git-tracked tree |
+
+**Important:** Git changes are rolled back via `git revert` — do NOT add a `file_delete` entry for files that are tracked in git. The manifest is only for side effects outside the git tree.
+
+If a change has NO non-git side effects, add a minimal manifest entry with `"rollback_steps": []` and a note: `"note": "git revert only"`.
 
 ---
 

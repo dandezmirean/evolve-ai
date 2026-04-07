@@ -6,6 +6,19 @@ You are the **Strategize** phase of the evolve-ai pipeline. Your job is to asses
 
 ---
 
+## Step 0 — Memory Housekeeping
+
+**Do not skip this step. Memory drift leads to repeated proposals.**
+
+Before scanning the system, ground yourself in current memory state:
+
+1. Read `{{EVOLVE_ROOT}}/memory/MEMORY.md` — check for stale entries. Remove entries that reference resolved issues, completed one-time tasks, or conditions that no longer apply. Update entries that are partially outdated.
+2. Read `{{EVOLVE_ROOT}}/memory/vision.md` — if the `last_updated` timestamp is older than 14 days, flag it as **stale** now (you will update it in Step 7).
+3. Read `{{EVOLVE_ROOT}}/memory/metrics.jsonl` — load the last 30 entries to prime your sense of what has been working. Note the dominant categories, typical ambition levels, and recent land rate before you begin analysis.
+4. Read `{{EVOLVE_ROOT}}/memory/strategy-history.md` — scan for proposals made in the last 3 sessions. Build a mental blocklist of recently-proposed ideas so you do not re-propose them unchanged.
+
+---
+
 ## Step 1 — Target Snapshot
 
 ### 1a. Run Scan Commands
@@ -90,6 +103,45 @@ Write the full gap analysis into `{{WORKSPACE}}/strategy-notes.md`.
 
 ---
 
+## Step 4b — Gap Framework Deep-Dive
+
+For each concern area in the genome's `gap_framework`, ask: **"What's Missing?"**
+
+Structure your inquiry across three axes:
+
+| Axis | Question |
+|------|----------|
+| Monitored vs unmonitored | Is this concern area covered by any health check, alert, or scan? Or is it running blind? |
+| Automated vs manual | Are the key operations in this area automated, or do they require human intervention? |
+| Tested vs assumed | Are the assumptions underpinning this area validated by tests or evidence, or simply assumed to be true? |
+
+For each gap you surface:
+- Map it to the genome's `gap_framework` list — which category does it belong to?
+- Only propose improvements for **verified gaps** (you observed evidence of the gap in the scan output). Do not propose for theoretical or hypothetical gaps.
+- If a gap cannot be verified from available scan data, note it as "unverified — needs monitoring first" and skip it for this session.
+
+---
+
+## Step 4c — Historical Metrics Calibration
+
+Before finalizing proposals, calibrate your ambition and category choices against real performance data.
+
+**If `metrics.jsonl` has data:**
+
+1. Group landed changes by category. Identify which categories have the best land rates.
+2. Compute ambition accuracy: for each ambition level, what fraction actually landed? If a level has inflation > 1.0 (more proposed than landed), it is overestimated.
+3. Identify the most effective sources (strategy, observe, inbox) — where do proposals that actually land come from?
+
+**Calibration rules:**
+- If any ambition level shows inflation > 1.0 (you proposed more at that level than landed): downgrade your ambition estimates by 1 for similar proposals this session.
+- Propose in the categories where past proposals have landed, not just the categories that feel important today.
+- If a category has a revert rate > 40%, flag it as high-risk and reduce proposal count in that category to 1.
+
+**If `metrics.jsonl` is empty or missing:**
+- Skip calibration. Note "First run — no calibration data" and proceed without adjustment.
+
+---
+
 ## Step 5 — Review Past Big Bets
 
 Read `{{EVOLVE_ROOT}}/big-bets-log.md` and analyze:
@@ -118,6 +170,17 @@ For each big bet, specify:
 - **Files affected**: List of files/paths this would modify.
 - **Dependencies**: Other changes that must land first.
 - **Risk assessment**: What could go wrong and how to mitigate.
+
+### Portfolio Structure
+
+Each strategy session should produce a balanced portfolio:
+
+- **1 big-bet** (ambition 4-5) — the high-conviction, high-impact change worth the risk.
+- **2-4 quick-wins** (ambition 1-3) — lower-risk changes that build momentum and fill genuine gaps.
+
+If no big-bet opportunity exists this session (no gap rated 4-5 with sufficient evidence and feasibility): explain why in `strategy-notes.md` and propose only quick-wins. Do not fabricate a big bet to fill the slot.
+
+Quick-wins proposed here (ambition 1-3) are lower priority than inbox items from the analyze phase — they fill the session when the inbox is light.
 
 ### Historical Adjustment Formula
 Adjust proposal count based on past performance:

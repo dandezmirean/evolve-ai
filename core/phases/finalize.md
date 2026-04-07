@@ -19,7 +19,13 @@ You are the **Finalize** phase of the evolve-ai pipeline. Your job is to make fi
 
 ## Empirical Override Rules
 
-These rules override the decision table for specific scenarios:
+These rules override the decision table for specific scenarios. **Validation data overrides theoretical concerns.** The challenge phase raised concerns; the validation phase gathered evidence. Evidence wins.
+
+**Key empirical overrides:**
+- If challenge `weakened` an entry (reduced scope, added concerns) but validation passed with guard: pass — **land it**. The weakening was a precaution; the evidence shows it was sufficient.
+- If challenge `approved` an entry but the guard fails in validation — **revert**. Challenge approval does not protect against a broken implementation. The evidence overrules the forecast.
+- If both guard passes AND impact is positive: this is the strongest possible signal. Land with confidence.
+- If guard passes AND impact is unmeasured: land it. Unmeasured is not the same as negative. Many improvements are not immediately measurable.
 
 ### Probation Handling
 - If a probation entry passed validation (guard: pass): promote to `landed`. Its one chance succeeded.
@@ -83,30 +89,51 @@ Record the score on the pool entry as `resilience_score`.
 
 ## Stuck Escalation Ladder
 
-If the pipeline is stuck (multiple iterations with no progress), apply escalation steps in order:
+If the pipeline is stuck (multiple iterations with no progress), count stall depth and apply the corresponding escalation step. Stall depth = number of consecutive iterations where this entry failed to land.
 
-### Step 1: Retry with Relaxed Constraints
-- If entries keep failing the same validation check, temporarily lower the check threshold (e.g., allow 1 extra CONCERN in challenge).
+### Stall 0 — Normal Operation
+No escalation needed. Apply the standard decision table. Make optimal decisions.
 
-### Step 2: Reduce Scope
-- Split stuck entries into smaller sub-tasks at lower ambition levels.
-- Add the sub-tasks to the pool and mark the parent as `blocked`.
+### Stall 1 — Re-Diagnose
+- Apply a **minimal correction** to address the specific failure. Do not redesign.
+- Be more decisive: either fix the narrow issue and land it, or kill it. Do not leave it in `fix` status indefinitely.
+- Ask: "Is the failure a narrow implementation bug or a deeper design problem?" If the latter, skip to Stall 2.
 
-### Step 3: Seek Alternative Approach
-- If a specific approach keeps failing, mark it with `approach_exhausted: true` and require the next proposal to use a fundamentally different strategy.
+### Stall 2 — Try Opposite Approach
+- The original approach has failed twice. Abandon it.
+- Re-implement using a **fundamentally different strategy** (e.g., if patching failed, try replacement; if additive failed, try subtractive).
+- Mark the entry with `approach_exhausted: true` for the original approach.
+- **Forced decisiveness:** If still failing after this attempt, move directly to Stall 3 — no further retries.
 
-### Step 4: Defer to Next Run
-- Mark the entry as `deferred` with a note explaining what was tried and what went wrong.
-- It will be re-evaluated in the next pipeline run with fresh context.
+### Stall 3 — Combine Near-Misses
+- Review all `fix` history entries to find partial successes — aspects that worked even though the whole failed.
+- Assemble only the working parts into a reduced proposal. Discard everything that failed.
+- This is the last creative attempt. If this combination fails, proceed to Stall 4.
 
-### Step 5: Kill With Explanation
-- If steps 1-4 have been tried (check history for escalation events), kill the entry with a detailed explanation of why it cannot be implemented.
-- Add `escalation_exhausted: true` to the entry.
+### Stall 4 — Minimum Viable Scope, Then Kill
+- Strip the change to its **absolute minimum viable form** — the smallest change that delivers any part of the intended benefit.
+- If the minimum viable form passes validation: land it (even if far below original ambition).
+- If the minimum viable form fails: **kill the entry** with reason "escalation-exhausted". Add `escalation_exhausted: true`.
+- Do not defer — a deferred entry at this stage will fail again next run for the same reasons.
 
-### Step 6: Notify and Pause
-- If 3+ entries have reached Step 5 in the same run, this is a systemic problem.
+### Stall 5+ — Systemic Problem
+- If 3+ entries have reached Stall 4 in the same run, this is a systemic problem, not an entry-level problem.
 - Generate a notification flagging the need for human review.
-- Include: what is stuck, what was tried, what the pipeline thinks the root cause is.
+- Include: what is stuck, what was tried, what the pipeline believes is the root cause.
+
+---
+
+## Convergence Awareness
+
+The number of stall cycles affects how aggressively the finalize phase must act. Do not let entries accumulate in indeterminate states.
+
+| Stall Depth | Mode | Behavior |
+|-------------|------|----------|
+| 0 | Normal | Standard decision table applies. Optimize for quality. |
+| 1 | Decisive | Land or kill. Do not leave entries in `fix`. One more cycle is acceptable. |
+| 2+ | Forced finalize | Everything decided NOW. No more deferrals. No more fix cycles. Land what passes, kill what doesn't. |
+
+**Forced finalize rule:** When operating at stall depth 2 or higher, every entry MUST receive a terminal decision (`landed`, `reverted`, `killed`, or `deferred` with a hard next-run deadline). A `fix` status at stall 2+ is not permitted.
 
 ---
 
@@ -289,6 +316,50 @@ Pipeline stalled after <N> iterations with no convergence.
 ```
 
 Choose the most appropriate template. If multiple apply (e.g., some landed, some reverted), combine elements.
+
+---
+
+## Report Format Template
+
+When generating `report.md`, use the following canonical structure. Adapt section presence to the run outcome (omit empty sections). Use `{{}}` placeholders for dynamic values. **Adapt formatting to the notification channel's format constraints** — if the channel is Telegram, keep lines short and avoid markdown tables; if it supports rich markdown, use tables.
+
+```
+## BIG BETS — {{session_date}}
+
+{{#each big_bets}}
+**{{id}}: {{title}}** (ambition {{ambition}})
+Status: {{final_status}} | Resilience: {{resilience_score}}/100
+{{#if landed}}Commit: {{commit_hash}}{{/if}}
+{{#if reverted}}Reverted: {{revert_reason}}{{/if}}
+{{/each}}
+
+{{#if no_big_bets}}
+No big bets this session.
+{{/if}}
+
+---
+
+## QUICK WINS
+
+{{#each quick_wins}}
+- **{{id}}**: {{title}} → {{final_status}}{{#if landed}} ({{commit_hash}}){{/if}}
+{{/each}}
+
+{{#if no_quick_wins}}
+No quick wins this session.
+{{/if}}
+
+---
+
+## SESSION
+
+- Proposed: {{count_proposed}} | Landed: {{count_landed}} | Reverted: {{count_reverted}} | Killed: {{count_killed}}
+- Land rate: {{land_rate}}% | Avg ambition landed: {{avg_ambition_landed}}
+- Stall depth: {{stall_depth}}
+{{#if blocked_categories}}- Blocked categories: {{blocked_categories}}{{/if}}
+{{#if escalation_actions}}- Escalation: {{escalation_actions}}{{/if}}
+{{#if next_focus}}- Next run focus: {{next_focus}}{{/if}}
+```
 
 ---
 
