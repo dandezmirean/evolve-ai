@@ -31,3 +31,4 @@ config/evolve.yaml
 # Claude Code
 CLAUDE.md
 .claude/
+.superpowers/

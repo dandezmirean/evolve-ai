@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 620" font-family="'SF Mono','Cascadia Code','Consolas',monospace">
+  <!-- Window frame -->
+  <rect width="820" height="620" rx="10" fill="#1e1e1e"/>
+  <rect width="820" height="620" rx="10" fill="none" stroke="#333" stroke-width="1"/>
+
+  <!-- Title bar -->
+  <rect width="820" height="38" rx="10" fill="#2d2d2d"/>
+  <rect y="28" width="820" height="10" fill="#2d2d2d"/>
+  <!-- Traffic lights -->
+  <circle cx="20" cy="19" r="6" fill="#ff5f56"/>
+  <circle cx="40" cy="19" r="6" fill="#ffbd2e"/>
+  <circle cx="60" cy="19" r="6" fill="#27c93f"/>
+  <!-- Title -->
+  <text x="410" y="24" text-anchor="middle" fill="#999" font-size="12">~/evolve-ai</text>
+
+  <!-- Terminal content -->
+  <g transform="translate(20, 56)" font-size="12.5" fill="#c9d1d9">
+    <!-- Command -->
+    <text y="0"><tspan fill="#666">$</tspan> ./bin/evolve run</text>
+
+    <!-- Housekeeping -->
+    <text y="30"><tspan fill="#484f58">[housekeeping]</tspan> Git snapshot: evolve-2026-04-06-pre</text>
+
+    <!-- Strategize -->
+    <text y="60"><tspan fill="#2ECC71">[strategize]</tspan> Reading memory + scanning target system...</text>
+    <text y="80"><tspan fill="#2ECC71">[strategize]</tspan> 3 improvement opportunities identified</text>
+    <text y="100">  S01  <tspan fill="#666">(ambition 4)</tspan> Harden SSH config: disable root login, add fail2ban</text>
+    <text y="120">  S02  <tspan fill="#666">(ambition 2)</tspan> Rotate expired TLS cert on reverse proxy</text>
+    <text y="140">  S03  <tspan fill="#666">(ambition 1)</tspan> Clean 4.2GB of stale Docker images</text>
+
+    <!-- Analyze -->
+    <text y="170"><tspan fill="#2ECC71">[analyze]</tspan> Capturing KPI baselines...</text>
+    <text y="190">  S01  baseline: ssh_audit_score=62/100, open_ports=7</text>
+    <text y="210">  S02  baseline: cert_days_remaining=<tspan fill="#ff5f56">-3 (EXPIRED)</tspan></text>
+    <text y="230">  S03  baseline: disk_used_pct=87%</text>
+
+    <!-- Challenge -->
+    <text y="260"><tspan fill="#2ECC71">[challenge]</tspan> Adversarial review (7 vectors per proposal)</text>
+    <text y="280">  S01  <tspan fill="#2ECC71">APPROVED</tspan>  — attack surface reduction, rollback via sshd_config</text>
+    <text y="300">  S02  <tspan fill="#2ECC71">APPROVED</tspan>  — cert renewal is low-risk, automated validation</text>
+    <text y="320">  S03  <tspan fill="#ffbd2e">WEAKENED</tspan>  — reduced scope: only prune images &gt;30 days</text>
+
+    <!-- Implement -->
+    <text y="350"><tspan fill="#2ECC71">[implement]</tspan> Executing 3 approved changes...</text>
+    <text y="370">  S01  Registered undo: restore /etc/ssh/sshd_config from snapshot</text>
+    <text y="390">  S02  Registered undo: restore previous cert files</text>
+    <text y="410">  S03  Registered undo: n/a (Docker image prune is safe)</text>
+
+    <!-- Validate -->
+    <text y="440"><tspan fill="#2ECC71">[validate]</tspan> Running health checks + scoring...</text>
+    <text y="460">  S01  <tspan fill="#2ECC71">PASS</tspan>  ssh_audit_score=91/100 <tspan fill="#2ECC71">(+29)</tspan>, all services reachable</text>
+    <text y="480">  S02  <tspan fill="#2ECC71">PASS</tspan>  cert_days_remaining=89, HTTPS probe clean</text>
+    <text y="500">  S03  <tspan fill="#2ECC71">PASS</tspan>  disk_used_pct=72% <tspan fill="#2ECC71">(-15%)</tspan></text>
+
+    <!-- Finalize -->
+    <text y="530"><tspan fill="#2ECC71">[finalize]</tspan> All 3 changes landed. Updating memory + changelog.</text>
+    <text y="550"><tspan fill="#2ECC71">[metrics]</tspan> Recorded 3 entries. Net impact: <tspan fill="#2ECC71" font-weight="bold">positive</tspan>.</text>
+  </g>
+</svg>

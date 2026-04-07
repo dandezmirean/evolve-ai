@@ -1,8 +1,16 @@
-# evolve-ai
+<div align="center">
+  <img src="./assets/logo.png" alt="evolve-ai" width="200">
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Tests: 317 passing](https://img.shields.io/badge/tests-317%20passing-brightgreen.svg)](tests/)
-[![Bash 4+](https://img.shields.io/badge/bash-4%2B-orange.svg)](#requirements)
+  <h1>evolve-ai</h1>
+  <p><strong>Autonomous improvement loop for anything you can describe.</strong></p>
+
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-000?style=for-the-badge&logo=opensourceinitiative&logoColor=2ECC71" alt="MIT License"></a>
+  <a href="tests/"><img src="https://img.shields.io/badge/tests-344%20passing-2ECC71?style=for-the-badge&logo=checkmarx&logoColor=white" alt="344 tests passing"></a>
+  <a href="#requirements"><img src="https://img.shields.io/badge/bash-4%2B-000?style=for-the-badge&logo=gnubash&logoColor=2ECC71" alt="Bash 4+"></a>
+  <a href="docs/architecture.md"><img src="https://img.shields.io/badge/docs-architecture-000?style=for-the-badge&logo=readthedocs&logoColor=2ECC71" alt="Docs"></a>
+
+  <br><br>
+</div>
 
 Your test coverage is slipping. A config file drifted three weeks ago and nobody noticed. Your agent prompts could be tighter but there are forty of them and who has time. The security advisory RSS feed has been piling up unread.
 
@@ -44,47 +52,11 @@ evolve-ai is modeled after a living organism. Each component has a biological an
 
 Here is what a typical `evolve run` looks like against an infrastructure target:
 
-```
-$ ./bin/evolve run
+<div align="center">
+  <img src="./assets/terminal-demo.svg" alt="evolve run terminal output" width="100%">
+</div>
 
-[housekeeping] Cleaning workspaces older than 14 days... removed 2
-[housekeeping] Git snapshot: evolve-2026-04-06-pre
-
-[strategize] Reading memory + scanning target system...
-[strategize] 3 improvement opportunities identified
-  S01  (ambition 4) Harden SSH config: disable root login, add fail2ban
-  S02  (ambition 2) Rotate expired TLS cert on reverse proxy
-  S03  (ambition 1) Clean 4.2GB of stale Docker images
-
-[analyze] Capturing KPI baselines...
-  S01  baseline: ssh_audit_score=62/100, open_ports=7
-  S02  baseline: cert_days_remaining=-3 (EXPIRED)
-  S03  baseline: disk_used_pct=87%
-
-[challenge] Adversarial review (7 vectors per proposal)
-  S01  APPROVED  — attack surface reduction is clear, rollback via sshd_config backup
-  S02  APPROVED  — cert renewal is low-risk, automated validation available
-  S03  WEAKENED  — reduced scope: only prune images older than 30 days (was "all unused")
-
-[implement] Executing 3 approved changes...
-  S01  Registered undo: restore /etc/ssh/sshd_config from snapshot
-        Applied hardened SSH config, installed fail2ban
-  S02  Registered undo: restore previous cert files
-        Renewed cert via certbot, reloaded nginx
-  S03  Registered undo: n/a (Docker image prune is safe)
-        Pruned 3.8GB of images older than 30 days
-
-[validate] Running health checks + scoring...
-  S01  PASS  ssh_audit_score=91/100 (+29), all services reachable
-  S02  PASS  cert_days_remaining=89, HTTPS probe clean
-  S03  PASS  disk_used_pct=72% (-15%)
-
-[finalize] All 3 changes landed. Updating memory + changelog.
-[metrics] Recorded 3 entries. Net impact: positive.
-
-Resume contexts saved. Run `evolve resume` to review any decision.
-Notification sent via Telegram.
-```
+<br>
 
 Three problems found, challenged, fixed, validated, and documented — without you touching a terminal.
 
@@ -149,6 +121,7 @@ That's it. Your first autonomous improvement cycle runs immediately.
 
 - Bash 4+
 - jq
+- yq
 - curl
 - md5sum (coreutils)
 - An LLM provider
@@ -177,46 +150,9 @@ evolve-ai runs two loops:
 - **Inner loop** — the 8-phase pipeline runs daily (or on-demand), producing concrete changes
 - **Outer loop** — the meta-agent runs weekly, evaluating pipeline health and tuning its own parameters
 
-```
-                        +---------------------------+
-                        |       Meta-Agent          |
-                        |  (weekly outer loop)      |
-                        |  evaluates + tunes        |
-                        +---------------------------+
-                                    |
-                                    v
-+-----------------------------------------------------------------------+
-|                     Inner Pipeline (daily)                             |
-|                                                                       |
-|  +-------+                                                            |
-|  | LENS  |  RSS feeds, commands, agent pushes, human drops            |
-|  | per-  |  organized by concern (security, deps, drift...)           |
-|  | genome|---> inbox-diff.txt                                         |
-|  +-------+          |                                                 |
-|                     v                                                 |
-|  [digest] -> [strategize] -> [analyze] -> [challenge]                 |
-|                                               |                       |
-|                                     +---------+---------+             |
-|                                     |                   |             |
-|                                  approved            killed           |
-|                                     |                                 |
-|                              +------v------+                          |
-|                              | implement   |<--+                      |
-|                              +------+------+   |                      |
-|                                     |          |                      |
-|                              +------v------+   |                      |
-|                              |  validate   |---+ (fix cycle)          |
-|                              +------+------+                          |
-|                                     |                                 |
-|                              +------v------+                          |
-|                              |  finalize   |                          |
-|                              +------+------+                          |
-|                                     |                                 |
-|                              +------v------+                          |
-|                              |   metrics   |                          |
-|                              +-------------+                          |
-+-----------------------------------------------------------------------+
-```
+<div align="center">
+  <img src="./assets/architecture.svg" alt="evolve-ai architecture diagram" width="100%">
+</div>
 
 ### Project structure
 
@@ -227,10 +163,10 @@ evolve-ai/
     orchestrator.sh           Pipeline sequencing + crash recovery
     pool.sh                   Pool state machine (JSON via jq)
     phases/                   8 phase prompt templates
+    adapters/                 Shared feed adapters (command, rss, manual, webhook)
     lens/                     Concern-based intelligence gathering (pre-digest)
       engine.sh               Lens orchestration — run concerns, gather pending items
       feed-runner.sh          Feed dispatch (RSS, command, webhook, manual)
-      adapters/               Pluggable feed adapters
     scoring/                  Four-layer scoring engine
     memory/                   Persistent cross-run state (7 memory files)
     inbox/                    Per-concern inbox watcher + manifest tracking
@@ -241,7 +177,7 @@ evolve-ai/
     meta/                     Outer loop evaluator
   genomes/                    Target genomes (infrastructure, codebase, agent-harness)
   config/evolve.yaml          Runtime configuration (generated by init)
-  tests/                      Test suite (317 tests)
+  tests/                      Test suite (344 tests)
   docs/                       Full documentation
 ```
 
