@@ -1,21 +1,86 @@
 # evolve-ai
 
-A self-improving autonomous agent framework. Point it at a target -- infrastructure, a codebase, an LLM agent system, anything -- define how to measure success, and it runs an autonomous improvement loop: digest, strategize, analyze, challenge, implement, validate, finalize, measure.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Tests: 289 passing](https://img.shields.io/badge/tests-289%20passing-brightgreen.svg)](tests/)
+[![Bash 4+](https://img.shields.io/badge/bash-4%2B-orange.svg)](#requirements)
 
-## Features
+Your test coverage is slipping. A config file drifted three weeks ago and nobody noticed. Your agent prompts could be tighter but there are forty of them and who has time. The security advisory RSS feed has been piling up unread.
 
-- **8-phase autonomous pipeline** -- digest, strategize, analyze, challenge, implement, validate, finalize, metrics
-- **Dual-trigger architecture** -- passive (scheduled cron) + reactive (event-driven via inbox/sensory organs)
-- **Adversarial gating** -- cold-start challenge phase attacks proposals before implementation
-- **Resume context** -- every decision produces a re-enterable session for human steering
-- **Multi-target** -- evolve multiple systems simultaneously with weighted target packs
-- **Conversational pack generation** -- describe what you are evolving in plain language
-- **Four-layer scoring** -- heuristic + LLM-as-judge + KPI baselines + user-defined
-- **Reversibility-first** -- every change must register its undo before executing
-- **Meta-agent** -- outer loop that evaluates and tunes the pipeline itself
-- **Pluggable everything** -- LLM providers, notification channels, intelligence sources, target packs
+You could audit, plan, implement, test, and rollback — every day — for every system you run. Or you could point evolve-ai at it and go do something else.
 
-## Quick Start
+**evolve-ai is an autonomous improvement loop for anything you can describe.** Infrastructure, codebases, LLM agent systems, homelabs — define what "better" looks like and it handles the rest: scanning for gaps, proposing changes, adversarially challenging its own ideas, implementing the survivors, validating them, rolling back failures, and measuring impact. Daily, event-triggered, or both. Unattended, with full rollback safety and human re-entry at every decision point.
+
+---
+
+## See it work
+
+Here is what a typical `evolve run` looks like against an infrastructure target:
+
+```
+$ ./bin/evolve run
+
+[housekeeping] Cleaning workspaces older than 14 days... removed 2
+[housekeeping] Git snapshot: evolve-2026-04-06-pre
+
+[strategize] Reading memory + scanning target system...
+[strategize] 3 improvement opportunities identified
+  S01  (ambition 4) Harden SSH config: disable root login, add fail2ban
+  S02  (ambition 2) Rotate expired TLS cert on reverse proxy
+  S03  (ambition 1) Clean 4.2GB of stale Docker images
+
+[analyze] Capturing KPI baselines...
+  S01  baseline: ssh_audit_score=62/100, open_ports=7
+  S02  baseline: cert_days_remaining=-3 (EXPIRED)
+  S03  baseline: disk_used_pct=87%
+
+[challenge] Adversarial review (7 vectors per proposal)
+  S01  APPROVED  — attack surface reduction is clear, rollback via sshd_config backup
+  S02  APPROVED  — cert renewal is low-risk, automated validation available
+  S03  WEAKENED  — reduced scope: only prune images older than 30 days (was "all unused")
+
+[implement] Executing 3 approved changes...
+  S01  Registered undo: restore /etc/ssh/sshd_config from snapshot
+        Applied hardened SSH config, installed fail2ban
+  S02  Registered undo: restore previous cert files
+        Renewed cert via certbot, reloaded nginx
+  S03  Registered undo: n/a (Docker image prune is safe)
+        Pruned 3.8GB of images older than 30 days
+
+[validate] Running health checks + scoring...
+  S01  PASS  ssh_audit_score=91/100 (+29), all services reachable
+  S02  PASS  cert_days_remaining=89, HTTPS probe clean
+  S03  PASS  disk_used_pct=72% (-15%)
+
+[finalize] All 3 changes landed. Updating memory + changelog.
+[metrics] Recorded 3 entries. Net impact: positive.
+
+Resume contexts saved. Run `evolve resume` to review any decision.
+Notification sent via Telegram.
+```
+
+Three problems found, challenged, fixed, validated, and documented — without you touching a terminal.
+
+---
+
+## Why evolve-ai?
+
+"How is this different from a cron script? Or Dependabot? Or a linter?"
+
+**It reasons about whether to act.** Every proposal goes through an adversarial challenge phase that tries to kill it with 7+ attack vectors before any code runs. Bad ideas die before they touch your system.
+
+**It lets you re-enter any decision.** Every choice the pipeline makes produces a resume context. Disagree with something? Run `evolve resume <id>` and steer it interactively.
+
+**It measures actual impact.** Four-layer scoring — automated metrics, LLM evaluation, KPI baselines, and your own custom checks — means every change is measured before and after. Negative impact triggers automatic rollback.
+
+**It improves itself.** A meta-agent (outer loop) evaluates the pipeline's own performance weekly and tunes prompts, scoring weights, and source credibility. The system that improves your systems also improves itself.
+
+**It rolls back first, asks questions later.** Every change must register its undo command before executing. If validation fails, the rollback is already staged.
+
+This is not a linter, a dependency updater, or an alert system. It is an autonomous loop that observes, reasons, acts, validates, and learns — across any target you can describe.
+
+---
+
+## Quick start
 
 ```bash
 git clone https://github.com/dandezmirean/evolve-ai.git
@@ -23,34 +88,39 @@ cd evolve-ai
 ./bin/evolve init
 ```
 
-The init wizard walks you through:
-
-1. Selecting what to evolve (infrastructure, agents, codebase, or describe your own)
-2. Configuring your LLM provider
-3. Setting up notifications
-4. Reviewing safety rules
-5. Setting a schedule
-
-Then trigger your first run:
+The init wizard walks you through target selection, LLM provider, notifications, safety rules, and scheduling. Then:
 
 ```bash
 ./bin/evolve run
 ```
 
-## Requirements
+That's it. Your first autonomous improvement cycle runs immediately.
+
+### Requirements
 
 - Bash 4+
 - jq
-- curl (for RSS sources)
+- curl
 - md5sum (coreutils)
 - An LLM provider (Claude recommended)
 
+---
+
+## Who is this for
+
+- **Homelab operators** who want their infrastructure audited and hardened while they sleep
+- **Solo devs** maintaining services and codebases with no time for daily hygiene
+- **Teams** that want autonomous code quality, test coverage, and dependency health
+- **Anyone running LLM agent systems** who wants prompts, tools, and evaluations continuously tuned
+
+---
+
 ## Architecture
 
-evolve-ai uses a two-loop design:
+evolve-ai runs two loops:
 
-- **Inner loop** -- the 8-phase pipeline runs daily (or on-demand), producing concrete changes
-- **Outer loop** -- the meta-agent runs weekly, evaluating pipeline health and tuning parameters
+- **Inner loop** — the 8-phase pipeline runs daily (or on-demand), producing concrete changes
+- **Outer loop** — the meta-agent runs weekly, evaluating pipeline health and tuning its own parameters
 
 ```
                         +---------------------------+
@@ -87,65 +157,34 @@ evolve-ai uses a two-loop design:
 +-----------------------------------------------------------------------+
 ```
 
-### Project Structure
+### Project structure
 
 ```
 evolve-ai/
-  bin/evolve               CLI entry point
-  config/
-    evolve.yaml            Runtime configuration (generated by init)
-    evolve.yaml.template   Template for reference
+  bin/evolve                  CLI entry point
   core/
-    orchestrator.sh         Pipeline sequencer, convergence, crash recovery
-    pool.sh                 Pool state machine (JSON via jq)
-    config.sh               YAML config parser
-    lock.sh                 PID-based global lock
-    housekeeping.sh         Workspace cleanup, git snapshots
-    resources.sh            RAM and disk gates
-    init.sh                 Interactive init wizard
-    phases/                 8 phase prompt templates (*.md)
-    scoring/
-      engine.sh             Four-layer scoring aggregation
-      metrics.sh            Metrics recorder + weekly digest
-    memory/
-      manager.sh            Memory file CRUD + pruning
-      templates/            7 memory file templates
-    notifications/
-      engine.sh             Notification router
-      stdout.sh             Terminal output provider
-      telegram.sh           Telegram provider
-      slack.sh              Slack provider
-      discord.sh            Discord provider
-    providers/
-      interface.sh          LLM provider dispatch
-      claude-max.sh         Claude via claude.ai (Max plan)
-      claude-api.sh         Claude API stub
-      openai.sh             OpenAI API stub
-    inbox/
-      watcher.sh            Polling inbox watcher
-      manifest.sh           MD5-based change detection
-      source-runner.sh      Source adapter dispatch
-      sources/              RSS, command, webhook, manual adapters
-    resume/
-      context-generator.sh  Resume context file generator
-      resume-runner.sh      Interactive resume session
-    directives/
-      manager.sh            Lock, priority, constraint, override directives
-    meta/
-      meta-agent.sh         Outer loop evaluator
-      meta-prompt.md        Meta-agent prompt template
-    packs/
-      validator.sh          Pack schema validation + listing
-  packs/
-    infrastructure/         Server/homelab pack
-    agent-harness/          LLM agent system pack
-    codebase/               Software project pack
-    _template/              Pack template for new packs
-  tests/                    Test suite (200+ tests)
-  docs/                     Documentation
+    orchestrator.sh           Pipeline sequencing + crash recovery
+    pool.sh                   Pool state machine (JSON via jq)
+    phases/                   8 phase prompt templates
+    scoring/                  Four-layer scoring engine
+    memory/                   Persistent cross-run state (7 memory files)
+    inbox/                    Reactive engine + intelligence source adapters
+    resume/                   Human re-entry context system
+    notifications/            Telegram, Slack, Discord, stdout
+    providers/                LLM provider abstraction (Claude, OpenAI)
+    rollback/                 Reversibility engine + undo handlers
+    meta/                     Outer loop evaluator
+  packs/                      Target packs (infrastructure, codebase, agent-harness)
+  config/evolve.yaml          Runtime configuration (generated by init)
+  tests/                      Test suite (289 tests)
+  docs/                       Full documentation
 ```
 
-## CLI Commands
+See [docs/architecture.md](docs/architecture.md) for the complete design breakdown.
+
+---
+
+## CLI commands
 
 | Command | Description |
 |---|---|
@@ -163,77 +202,45 @@ evolve-ai/
 | `evolve config` | Show current configuration |
 | `evolve version` | Print version string |
 
-## Target Packs
+---
 
-A target pack defines what evolve-ai is evolving. Each pack contains:
+## Target packs
 
-- **Scan commands** -- how to read the current state of the target system
-- **Health checks** -- pass/fail verification commands
-- **Sources** -- intelligence feeds (RSS, command output, webhooks, manual drops)
-- **Gap framework** -- dimensions to evaluate for improvement opportunities
-- **Scorers** -- heuristic metrics with weights and directions
-- **Safety rules** -- absolute prohibitions and approval conditions
-- **Reversibility model** -- how to undo side effects
-- **Challenge vectors** -- adversarial questions for the challenge phase
+A target pack tells evolve-ai what it is improving. It bundles scan commands, health checks, intelligence sources, scoring rules, safety constraints, and rollback strategies for a specific kind of system.
 
-### Built-in Packs
+**Built-in packs:**
 
-- **infrastructure** -- servers, homelabs, services, security, monitoring
-- **agent-harness** -- LLM agents, prompts, tools, evaluation
-- **codebase** -- software projects, code quality, test coverage
+- **infrastructure** — servers, homelabs, services, security, monitoring
+- **agent-harness** — LLM agents, prompts, tools, evaluation harnesses
+- **codebase** — software projects, code quality, test coverage, dependencies
 
-### Custom Packs
+**Custom packs:** Run `evolve pack create my-pack` and describe what you want to evolve in plain language. Or choose the `[+]` option during `evolve init`.
 
-Create a custom pack interactively:
+See [docs/creating-packs.md](docs/creating-packs.md) for the full pack authoring guide.
 
-```bash
-./bin/evolve pack create my-pack
-```
-
-Or describe what you want to evolve in plain language during `evolve init` by choosing the `[+]` option.
-
-See [docs/creating-packs.md](docs/creating-packs.md) for the full guide.
-
-## How It Works
-
-A typical autonomous run cycle:
-
-1. **Housekeeping** -- clean old workspaces, prune git tags, create a pre-run snapshot
-2. **Strategize** -- read memory, scan the target system, identify improvement opportunities
-3. **Analyze** -- deep-dive into the top opportunities, establish KPI baselines, add entries to the pool
-4. **Challenge** -- adversarial review of every proposal with 7+ attack vectors; kill, weaken, or approve
-5. **Implement** -- execute approved changes, register undo commands before each modification
-6. **Validate** -- run health checks, scoring, and regression tests against the changes
-7. **Finalize** -- decide the fate of each change (land, revert, or fix-cycle), update memory
-8. **Metrics** -- record 17-field metrics for every settled entry, generate resume contexts
-
-The implementation loop (steps 5-7) repeats until convergence: all pool entries reach a terminal state (landed, reverted, or killed) or the stall/iteration limit is hit.
-
-Directed runs (triggered by inbox items) prepend a **Digest** phase that processes incoming intelligence before strategizing.
-
-## Configuration
-
-All configuration lives in `config/evolve.yaml`, generated by `evolve init`. Key sections:
-
-- **targets** -- which packs to use, their root directories, and weights
-- **provider** -- LLM provider type (claude-max, claude-api, openai)
-- **notifications** -- where to send results (stdout, telegram, slack, discord)
-- **schedule** -- cron expressions for autonomous runs and meta-agent
-- **resources** -- RAM and disk thresholds that gate phase execution
-- **circuit_breaker** -- pause autonomous runs after repeated negative impacts
-- **convergence** -- max stalls and iterations for the implementation loop
-- **challenge** -- approval floor percentage
-
-See [docs/architecture.md](docs/architecture.md) for the complete configuration reference.
+---
 
 ## Documentation
 
-- [Getting Started](docs/getting-started.md) -- installation, first run, scheduled runs
-- [Architecture](docs/architecture.md) -- two-loop design, phase flow, configuration reference
-- [Creating Packs](docs/creating-packs.md) -- custom target pack guide
-- [Scoring Guide](docs/scoring-guide.md) -- four-layer scoring system
-- [Safety Model](docs/safety-model.md) -- safety rules, directives, circuit breaker
+- [Getting Started](docs/getting-started.md) — installation, first run, scheduled runs
+- [Architecture](docs/architecture.md) — two-loop design, phase flow, configuration reference
+- [Creating Packs](docs/creating-packs.md) — custom target pack guide
+- [Scoring Guide](docs/scoring-guide.md) — four-layer scoring system explained
+- [Safety Model](docs/safety-model.md) — safety rules, directives, circuit breaker
+
+---
+
+## Contributing
+
+evolve-ai is MIT-licensed and contributions are welcome.
+
+- **Star the repo** if you find this useful — it helps others discover it
+- **File an issue** for bugs, feature requests, or questions
+- **Contribute a pack** — the best way to expand what evolve-ai can improve
+- **Check the docs** — especially the [architecture](docs/architecture.md) and [pack creation](docs/creating-packs.md) guides before diving in
+
+---
 
 ## License
 
-MIT
+[MIT](LICENSE)
