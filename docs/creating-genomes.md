@@ -62,7 +62,11 @@ Fields per check:
 
 ### lens
 
-The perceptual layer -- how the genome sees the outside world. Organized by **concerns** (what to watch for), not by data delivery mechanism. Each concern can pull from multiple feeds, accept manual drops, and trigger research.
+The perceptual layer -- how the genome sees the outside world. This is one of evolve-ai's core differentiators.
+
+Traditional automation tools organize intelligence by delivery mechanism: "here are my RSS feeds, here are my cron commands." evolve-ai organizes by **concerns** -- what the genome needs to watch for. A single concern like "security posture" can pull from an RSS feed AND a local audit command AND accept human file drops AND receive webhook pushes from a scanner -- all routed to the same context. The concern is what matters; the protocol is just plumbing.
+
+Each concern gets its own inbox directory (`inbox/{concern-name}/pending/`). Drop a file in and the lens routes it to the right context automatically -- the directory is the tag, no metadata needed.
 
 ```yaml
 lens:

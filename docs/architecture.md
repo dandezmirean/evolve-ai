@@ -44,10 +44,47 @@ The meta-agent runs weekly. It reads accumulated metrics, evaluates pipeline hea
     |   strategize -> analyze -> challenge -> impl loop        |
     |                                                          |
     |   Directed mode (inbox-triggered):                       |
-    |   digest -> strategize -> analyze -> challenge -> impl   |
+    |   lens -> digest -> strategize -> analyze -> challenge   |
+    |   -> impl loop                                           |
     |                                                          |
     +----------------------------------------------------------+
 ```
+
+## Lens: The Perceptual Layer
+
+Before any phase runs, the lens gathers intelligence for the genome. It is the entry point for all external data.
+
+A lens is organized by **concerns** — the things a genome needs to watch for — not by data delivery mechanism. Each concern can pull from multiple feeds (RSS, shell commands), accept human file drops, receive agent pushes, and trigger deep web research when new items arrive.
+
+```
+                 +-----------------------------+
+                 |           LENS              |
+                 |                             |
+  RSS feeds ---->|  concern: security-posture  |----> inbox/security-posture/pending/
+  commands ----->|  concern: resource-drift    |----> inbox/resource-drift/pending/
+  human drops -->|  concern: service-health    |----> inbox/service-health/pending/
+  agent push --->|                             |
+                 +-----------------------------+
+                               |
+                    lens_gather_all_pending()
+                               |
+                               v
+                       inbox-diff.txt
+                       (tagged by concern)
+                               |
+                               v
+                        [digest phase]
+```
+
+**Why concern-first?** A security advisory could arrive via RSS, a webhook, a human pasting a CVE, or another agent. Four protocols, same intelligence need. The concern is what matters — the delivery mechanism is just config within it. This means:
+
+- **Prioritization is strategic.** Digest can prioritize by concern, not by source type. "Security items get researched first" is meaningful. "RSS items first" is not.
+- **Source credibility is granular.** Credibility is tracked per concern-feed pair. An RSS feed might be great for security but useless for performance.
+- **The inbox directory is the tag.** Drop a file into `inbox/security-posture/pending/` and it's automatically routed to the right context. No metadata file needed.
+
+The lens runs in two modes:
+- **Scheduled feeds** — RSS fetches and command outputs run on their configured schedule (hourly, daily, weekly)
+- **Reactive** — human drops and agent pushes are detected by the inbox watcher and trigger directed runs immediately
 
 ## Phase Flow
 
@@ -81,7 +118,17 @@ The meta-agent runs weekly. It reads accumulated metrics, evaluates pipeline hea
 
 ### Directed Mode (Inbox-Triggered)
 
-Prepends a **digest** phase that processes incoming inbox items before the normal pipeline flow.
+Prepends a **lens gather** step and a **digest** phase before the normal pipeline flow:
+
+```
+  +-------+     +----------+     +-------------+     +-------------+
+  |  lens |---->|  digest  |---->| strategize  |---->|   analyze   |--->
+  +-------+     +----------+     +-------------+     +-------------+
+
+  (gather        (research,        (normal pipeline continues
+   from all       filter,           as in autonomous mode)
+   concerns)      score items)
+```
 
 ### Phase Descriptions
 
@@ -170,12 +217,16 @@ The `max_iterations` setting (default: 10) provides a hard upper bound.
 
 ### Data Flow
 
-Each phase reads from and writes to the workspace directory and memory:
+Each phase reads from and writes to the workspace directory and memory. The lens feeds into digest as the entry point for external intelligence:
 
 ```
-  Lens concerns --> inbox-diff.txt --> digest --> pool.json (new entries)
-                              |
-  Memory + scan data --> strategize --> strategy-notes.md
+  Lens (per-genome concerns)
+    |  RSS, commands, human drops, agent pushes
+    |  organized by concern, gathered into one file
+    v
+  inbox-diff.txt (tagged by concern) --> digest --> pool.json (new entries)
+                                            |
+  Memory + scan data -------> strategize --> strategy-notes.md
                               |
   Strategy notes --> analyze --> pool.json (entries added/updated)
                               |
