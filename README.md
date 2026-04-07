@@ -4,7 +4,7 @@
   <h1>evolve-ai</h1>
   <p><strong>Autonomous improvement loop for anything you can describe.</strong></p>
 
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-000?style=for-the-badge&logo=opensourceinitiative&logoColor=2ECC71" alt="MIT License"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-AGPL--3.0-000?style=for-the-badge&logo=opensourceinitiative&logoColor=2ECC71" alt="AGPL-3.0 License"></a>
   <a href="tests/"><img src="https://img.shields.io/badge/tests-344%20passing-2ECC71?style=for-the-badge&logo=checkmarx&logoColor=white" alt="344 tests passing"></a>
   <a href="#requirements"><img src="https://img.shields.io/badge/bash-4%2B-000?style=for-the-badge&logo=gnubash&logoColor=2ECC71" alt="Bash 4+"></a>
   <a href="docs/architecture.md"><img src="https://img.shields.io/badge/docs-architecture-000?style=for-the-badge&logo=readthedocs&logoColor=2ECC71" alt="Docs"></a>
@@ -256,7 +256,7 @@ The infrastructure genome ships with concerns for security posture, resource dri
 
 ## Contributing
 
-evolve-ai is MIT-licensed and contributions are welcome.
+evolve-ai is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0), and contributions are welcome.
 
 - **Star the repo** if you find this useful — it helps others discover it
 - **File an issue** for bugs, feature requests, or questions
@@ -267,4 +267,4 @@ evolve-ai is MIT-licensed and contributions are welcome.
 
 ## License
 
-[MIT](LICENSE)
+[AGPL-3.0](LICENSE)
