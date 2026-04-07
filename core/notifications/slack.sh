@@ -11,8 +11,11 @@ notify_slack() {
         return 0
     fi
 
+    local payload
+    payload="$(jq -n --arg text "$message" '{"text": $text}')"
+
     curl -s -X POST "$webhook_url" \
         -H 'Content-Type: application/json' \
-        -d "{\"text\": \"$message\"}" \
+        -d "$payload" \
         >/dev/null 2>&1 || true
 }

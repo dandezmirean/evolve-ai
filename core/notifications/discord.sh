@@ -11,8 +11,11 @@ notify_discord() {
         return 0
     fi
 
+    local payload
+    payload="$(jq -n --arg text "$message" '{"content": $text}')"
+
     curl -s -X POST "$webhook_url" \
         -H 'Content-Type: application/json' \
-        -d "{\"content\": \"$message\"}" \
+        -d "$payload" \
         >/dev/null 2>&1 || true
 }
