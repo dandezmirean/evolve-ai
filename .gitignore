@@ -3,8 +3,8 @@
 workspace/
 /memory/
 inbox/
-resume-context/
-directives/
+/resume-context/
+/directives/
 
 # Config (user-specific)
 config/evolve.yaml

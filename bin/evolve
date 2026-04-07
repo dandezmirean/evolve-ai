@@ -6,6 +6,7 @@ EVOLVE_BIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EVOLVE_ROOT="$(cd "$EVOLVE_BIN_DIR/.." && pwd)"
 
 source "$EVOLVE_ROOT/core/orchestrator.sh"
+source "$EVOLVE_ROOT/core/resume/resume-runner.sh"
 
 VERSION="0.1.0"
 
@@ -128,14 +129,23 @@ cmd_history() {
 # cmd_init
 # ---------------------------------------------------------------------------
 cmd_init() {
-    echo "evolve init provided by Plan 3"
+    source "$EVOLVE_ROOT/core/init.sh"
+    run_init "$EVOLVE_ROOT"
 }
 
 # ---------------------------------------------------------------------------
-# cmd_resume
+# cmd_resume [context_id]
 # ---------------------------------------------------------------------------
 cmd_resume() {
-    echo "evolve resume provided by Plan 6"
+    local context_id="${1:-}"
+
+    if [[ -z "$context_id" ]]; then
+        list_resume_contexts "$EVOLVE_ROOT"
+    elif [[ "$context_id" == "circuit-breaker" ]]; then
+        resume_circuit_breaker "$EVOLVE_ROOT"
+    else
+        resume_session "$EVOLVE_ROOT" "$context_id"
+    fi
 }
 
 # ---------------------------------------------------------------------------
@@ -165,15 +175,26 @@ main() {
             cmd_init
             ;;
         resume)
-            cmd_resume
+            cmd_resume "${1:-}"
             ;;
         pack)
             local sub="${1:-}"
             shift || true
             case "$sub" in
-                list)   echo "evolve pack list: not yet implemented" ;;
+                list)
+                    source "$EVOLVE_ROOT/core/packs/validator.sh"
+                    list_packs "$EVOLVE_ROOT/packs"
+                    ;;
                 edit)   echo "evolve pack edit: not yet implemented" ;;
-                create) echo "evolve pack create: not yet implemented" ;;
+                create)
+                    source "$EVOLVE_ROOT/core/init.sh"
+                    local desc="${1:-}"
+                    if [[ -z "$desc" ]]; then
+                        printf 'Describe what you want to evolve: '
+                        read -r desc
+                    fi
+                    generate_custom_pack "$EVOLVE_ROOT" "$desc"
+                    ;;
                 *)      echo "Unknown pack subcommand: $sub" >&2; usage; exit 1 ;;
             esac
             ;;
