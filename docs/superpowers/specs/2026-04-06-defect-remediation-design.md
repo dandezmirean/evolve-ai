@@ -64,6 +64,8 @@ yq -o=json '.scorers.'"$scorer_type" "$genome_yaml"
 
 **Dependency:** `yq` must be installed. Add a check to `bin/evolve` startup and to `evolve init` that verifies `yq` is in PATH, with install instructions if missing. `yq` is a single static binary (~5MB), comparable to `jq` which is already required.
 
+**Implementation note:** The exact `yq` invocation will be refined during implementation. The `..` traversal shown above works, but `yq -o=props` (Java properties output) may be cleaner for producing `key.path = value` pairs. The implementation will pin the final approach after testing with the actual config and genome YAML files.
+
 ### 0b. Fix lock with `flock` (fixes #7)
 
 **Problem:** `core/lock.sh` uses a check-then-write pattern (TOCTOU race) with predictable `/tmp` paths (symlink attack vector).
@@ -101,7 +103,9 @@ release_lock() {
 
 **Change:** `git add -A` already respects `.gitignore`. The fix is to ensure proper ignore rules exist:
 
-1. In `evolve init`, generate a `.gitignore` that includes:
+1. Change `git add -A` to `git add -u` in `_housekeeping_git_snapshot`. This stages changes to already-tracked files only, without adding new untracked files. The snapshot's purpose is crash recovery for the pre-run state — it should capture modifications, not start tracking unknown files.
+
+2. In `evolve init`, generate a `.gitignore` that includes:
    ```
    # Secrets
    .env
@@ -117,7 +121,7 @@ release_lock() {
    workspace/
    ```
 
-2. Before committing, warn if the staged diff is unusually large (>1000 lines) — this catches cases where the user dropped large files into the project dir:
+3. Before committing, warn if the staged diff is unusually large (>1000 lines) — this catches cases where the user dropped large files into the project dir:
    ```bash
    local staged_lines
    staged_lines="$(git -C "$evolve_root" diff --cached --stat | tail -1 | grep -oE '[0-9]+ insertion' | grep -oE '[0-9]+' || echo 0)"
@@ -223,7 +227,21 @@ case "$op" in
 esac
 ```
 
-**Path validation:** All paths are validated as relative (no leading `/`) and resolved under `$evolve_root` only. Absolute paths are rejected.
+**Path validation:** All paths are validated as:
+- Relative (no leading `/`) — rejects absolute paths
+- No traversal (no `..` components) — prevents escaping `$evolve_root`
+- Resolved under `$evolve_root` only
+
+```bash
+_validate_rollback_path() {
+    local p="$1"
+    [[ "$p" == /* ]] && return 1    # absolute
+    [[ "$p" == *..* ]] && return 1  # traversal
+    return 0
+}
+```
+
+**Supported operations:** `git_checkout`, `git_revert` (full commit revert), `rm` (single file), `cp` (file copy). All other ops are logged and skipped.
 
 **Phase prompt updates:** The `implement` phase prompt (`core/phases/implement.md`) must be updated to document the new structured undo format so the LLM generates manifests in the correct schema.
 
@@ -485,7 +503,7 @@ local run_date
 run_date="$(printf '%s' "$metric_json" | jq -r '.run_date // ""')"
 
 if [[ -n "$metric_id" && -n "$run_date" && -f "$metrics_file" ]]; then
-    if grep "\"id\":\"${metric_id}\"" "$metrics_file" | grep -q "\"run_date\":\"${run_date}\"" 2>/dev/null; then
+    if grep -F "\"id\":\"${metric_id}\"" "$metrics_file" | grep -Fq "\"run_date\":\"${run_date}\"" 2>/dev/null; then
         return 0
     fi
 elif [[ -n "$metric_id" && -f "$metrics_file" ]]; then
