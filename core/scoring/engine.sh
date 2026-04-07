@@ -94,7 +94,7 @@ scoring_run_llm_judge() {
     if [[ -f "$genome_yaml" ]]; then
         local saved_cache="$_CONFIG_CACHE"
         load_config "$genome_yaml"
-        llm_enabled="$(config_get_default "llm_judge.enabled" "false")"
+        llm_enabled="$(config_get_default "scorers.llm_judge.enabled" "false")"
         _CONFIG_CACHE="$saved_cache"
     fi
 
@@ -113,7 +113,7 @@ scoring_run_llm_judge() {
     local prompt_file
     prompt_file="$(mktemp)"
     local judge_prompt
-    judge_prompt="$(config_get_default "llm_judge.prompt" "Rate this change from 0.0 to 1.0 based on quality and impact.")"
+    judge_prompt="$(config_get_default "scorers.llm_judge.prompt" "Rate this change from 0.0 to 1.0 based on quality and impact.")"
 
     {
         echo "$judge_prompt"
@@ -140,9 +140,14 @@ scoring_run_llm_judge() {
     rm -f "$prompt_file"
 
     # Try to extract JSON from response
-    local score reasoning
-    score="$(printf '%s' "$response" | jq -r '.score // 0.5' 2>/dev/null)" || score="0.5"
-    reasoning="$(printf '%s' "$response" | jq -r '.reasoning // "no reasoning"' 2>/dev/null)" || reasoning="no reasoning"
+    local score="0.5"
+    local reasoning="no reasoning"
+    if [[ -f "$response" ]] && jq empty "$response" 2>/dev/null; then
+        score="$(jq -r '.score // 0.5' "$response" 2>/dev/null)" || score="0.5"
+        reasoning="$(jq -r '.reasoning // "no reasoning"' "$response" 2>/dev/null)" || reasoning="no reasoning"
+    else
+        reasoning="response file missing or invalid JSON"
+    fi
 
     # Clamp score to 0.0-1.0
     score="$(printf '%s' "$score" | awk '{if ($1 < 0) print 0; else if ($1 > 1) print 1; else print $1}')"
@@ -463,79 +468,17 @@ scoring_aggregate() {
 
 # ---------------------------------------------------------------------------
 # _parse_scorer_list <genome_yaml> <scorer_type>
-# Parses a YAML file to extract scorer definitions from scorers.<type>[].
+# Extracts scorer definitions from scorers.<type>[] using yq.
 # Outputs a JSON array of {name, command, weight, direction}.
-# This is a simplified YAML list parser for our specific format.
 # ---------------------------------------------------------------------------
 _parse_scorer_list() {
     local genome_yaml="$1"
     local scorer_type="$2"
 
-    # Parse YAML scorer blocks manually
-    # Expected format:
-    # scorers:
-    #   heuristic:
-    #     - name: "scorer_name"
-    #       command: "some command"
-    #       weight: 1
-    #       direction: "higher_is_better"
-    awk -v type="$scorer_type" '
-    function flush_item() {
-        if (in_item && name != "") {
-            if (!first) printf ","
-            gsub(/"/, "\\\"", command)
-            gsub(/"/, "\\\"", name)
-            printf "{\"name\":\"%s\",\"command\":\"%s\",\"weight\":%s,\"direction\":\"%s\"}", name, command, weight, direction
-            first = 0
-        }
-    }
-    function parse_kv(line,    colon, k, v) {
-        sub(/^[[:space:]]+/, "", line)
-        sub(/[[:space:]]+#.*$/, "", line)
-        colon = index(line, ":")
-        if (colon > 0) {
-            k = substr(line, 1, colon - 1)
-            v = substr(line, colon + 1)
-            gsub(/^[[:space:]]+|[[:space:]]+$/, "", k)
-            gsub(/^[[:space:]]+|[[:space:]]+$/, "", v)
-            gsub(/^["'"'"']|["'"'"']$/, "", v)
-            if (k == "name") name = v
-            else if (k == "command") command = v
-            else if (k == "weight") weight = v
-            else if (k == "direction") direction = v
-        }
-    }
-    BEGIN {
-        in_scorers = 0; in_type = 0; in_item = 0
-        name = ""; command = ""; weight = "1"; direction = "higher_is_better"
-        first = 1
-        printf "["
-    }
+    if [[ ! -f "$genome_yaml" ]]; then
+        echo "[]"
+        return 0
+    fi
 
-    /^scorers:/ { in_scorers = 1; next }
-    /^[^ ]/ && !/^scorers:/ { in_scorers = 0; in_type = 0 }
-
-    in_scorers && $0 ~ "^  " type ":" { in_type = 1; next }
-    in_scorers && /^  [^ ]/ && !($0 ~ "^  " type ":") { in_type = 0 }
-
-    in_type && /^    - / {
-        flush_item()
-        in_item = 1
-        name = ""; command = ""; weight = "1"; direction = "higher_is_better"
-        # Extract key:value from "    - key: value" line
-        line = $0
-        sub(/^    - /, "", line)
-        parse_kv(line)
-        next
-    }
-
-    in_type && in_item && /^      [^ -]/ {
-        parse_kv($0)
-    }
-
-    END {
-        flush_item()
-        printf "]"
-    }
-    ' "$genome_yaml"
+    yq -o=json ".scorers.$scorer_type // []" "$genome_yaml" 2>/dev/null || echo "[]"
 }
