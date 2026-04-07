@@ -60,36 +60,57 @@ Fields per check:
 - `expect` -- validation mode: `exit_code_0` (command must succeed) or `output_matches` (output must match regex)
 - `value` -- regex pattern (only used with `output_matches`)
 
-### sources
+### lens
 
-Intelligence feeds that inform the strategize and digest phases. Each source has a type that determines which adapter processes it.
+The perceptual layer -- how the genome sees the outside world. Organized by **concerns** (what to watch for), not by data delivery mechanism. Each concern can pull from multiple feeds, accept manual drops, and trigger research.
 
 ```yaml
-sources:
-  - name: "security-advisories"
-    type: "rss"
-    schedule: "daily"
-    url: "https://example.com/feed.xml"
-    description: "OS security advisories"
-  - name: "error-log-review"
-    type: "command"
-    schedule: "daily"
-    command: "journalctl --since='24 hours ago' --priority=err --no-pager -q"
-    description: "System error log review"
-  - name: "manual-inbox"
-    type: "manual"
-    schedule: "hourly"
-    watch_dir: "/path/to/inbox"
-    description: "Manual file drops"
+lens:
+  concerns:
+    - name: "security-posture"
+      description: "Vulnerabilities, advisories, exposure changes"
+      feeds:
+        - type: "rss"
+          url: "https://example.com/feed.xml"
+          schedule: "daily"
+          description: "OS security advisories"
+        - type: "command"
+          command: "journalctl --since='24 hours ago' --priority=err --no-pager -q"
+          schedule: "daily"
+          description: "System error log review"
+      accepts_inbox: true
+      accepts_agents: true
+      research_on_arrival: true
+
+    - name: "resource-drift"
+      description: "Disk growth, memory trends, capacity warnings"
+      feeds:
+        - type: "command"
+          command: "df -h / && free -m"
+          schedule: "daily"
+          description: "Resource usage snapshot"
+      accepts_inbox: false
+      accepts_agents: true
+      research_on_arrival: false
 ```
 
-Source types:
+Fields per concern:
+- `name` (required) -- identifier, used for per-concern inbox directories
+- `description` (required) -- what this concern watches for
+- `feeds` (optional) -- array of automated data sources
+- `accepts_inbox` (default: true) -- whether humans can drop files into this concern
+- `accepts_agents` (default: false) -- whether external agents can push to this concern
+- `research_on_arrival` (default: false) -- whether new items trigger deep research
+
+Feed types:
 - `rss` -- fetches an RSS/Atom feed URL; requires `url`
 - `command` -- runs a shell command; requires `command`
 - `manual` -- watches a directory for new files; requires `watch_dir`
 - `webhook` -- listens for HTTP POST requests (runs as a separate process)
 
 Schedule values: `hourly`, `daily`, `weekly`
+
+Per-concern inbox directories are created automatically at `inbox/{concern-name}/pending/` and `inbox/{concern-name}/processed/`.
 
 ### gap_framework
 
@@ -305,7 +326,7 @@ The three built-in genomes are good references for different target types:
 ### infrastructure
 
 - Focus: servers, services, security, monitoring
-- Scan commands: system resources, Docker containers, running services, crontab
+- Lens concerns: security-posture, resource-drift, service-health
 - Scorers: uptime, memory availability, disk space, failed service count
 - Safety: no public port exposure, no firewall disabling, no credential storage
 - Challenge vectors: downtime risk, single points of failure, idempotency
@@ -313,7 +334,7 @@ The three built-in genomes are good references for different target types:
 ### agent-harness
 
 - Focus: LLM agents, prompts, tools, evaluation
-- Scan commands: agent configs, prompt files, evaluation results
+- Lens concerns: model-landscape, prompt-quality, framework-changes
 - Scorers: evaluation pass rate, response quality, token efficiency
 - Safety: no production deployments, no API key exposure
 - Challenge vectors: prompt regression, hallucination risk, cost impact
@@ -321,7 +342,7 @@ The three built-in genomes are good references for different target types:
 ### codebase
 
 - Focus: software projects, code quality, test coverage
-- Scan commands: git log, test results, linting output
+- Lens concerns: dependency-health, code-quality, ecosystem-changes
 - Scorers: test pass rate, code coverage, lint warnings
 - Safety: no force pushes, no credential commits
 - Challenge vectors: test coverage impact, API compatibility, dependency risks

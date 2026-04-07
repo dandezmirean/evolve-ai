@@ -172,21 +172,12 @@ test_init_inbox() {
     init_inbox "$TEST_TMPDIR" >/dev/null
 
     TESTS_RUN=$(( TESTS_RUN + 1 ))
-    if [[ -d "$TEST_TMPDIR/inbox/pending" ]]; then
+    if [[ -d "$TEST_TMPDIR/inbox" ]]; then
         TESTS_PASSED=$(( TESTS_PASSED + 1 ))
-        echo "  PASS: inbox/pending directory created"
+        echo "  PASS: inbox directory created"
     else
         TESTS_FAILED=$(( TESTS_FAILED + 1 ))
-        echo "  FAIL: inbox/pending directory not created"
-    fi
-
-    TESTS_RUN=$(( TESTS_RUN + 1 ))
-    if [[ -d "$TEST_TMPDIR/inbox/processed" ]]; then
-        TESTS_PASSED=$(( TESTS_PASSED + 1 ))
-        echo "  PASS: inbox/processed directory created"
-    else
-        TESTS_FAILED=$(( TESTS_FAILED + 1 ))
-        echo "  FAIL: inbox/processed directory not created"
+        echo "  FAIL: inbox directory not created"
     fi
 
     TESTS_RUN=$(( TESTS_RUN + 1 ))

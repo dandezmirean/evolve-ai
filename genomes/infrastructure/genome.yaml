@@ -21,22 +21,44 @@ health_checks:
     command: "docker ps -q | wc -l"
     expect: "exit_code_0"
 
-sources:
-  - name: "security-advisories"
-    type: "rss"
-    schedule: "daily"
-    description: "OS security advisories"
-    url: ""
-  - name: "system-errors"
-    type: "command"
-    schedule: "daily"
-    command: "journalctl --since='24 hours ago' --priority=err --no-pager -q"
-    description: "System error log review"
-  - name: "docker-updates"
-    type: "command"
-    schedule: "weekly"
-    command: "docker images --format '{{.Repository}}:{{.Tag}}' | head -20"
-    description: "Check running container image versions"
+lens:
+  concerns:
+    - name: "security-posture"
+      description: "Vulnerabilities, advisories, CVEs, exposure changes"
+      feeds:
+        - type: "rss"
+          url: ""
+          schedule: "daily"
+          description: "OS security advisories"
+        - type: "command"
+          command: "journalctl --since='24 hours ago' --priority=err --no-pager -q"
+          schedule: "daily"
+          description: "System error log review"
+      accepts_inbox: true
+      accepts_agents: true
+      research_on_arrival: true
+
+    - name: "resource-drift"
+      description: "Disk growth, memory trends, capacity warnings"
+      feeds:
+        - type: "command"
+          command: "df -h / && free -m"
+          schedule: "daily"
+          description: "Resource usage snapshot"
+      accepts_inbox: false
+      accepts_agents: true
+      research_on_arrival: false
+
+    - name: "service-health"
+      description: "Container updates, service failures, dependency versions"
+      feeds:
+        - type: "command"
+          command: "docker images --format '{{.Repository}}:{{.Tag}}' | head -20"
+          schedule: "weekly"
+          description: "Container image versions"
+      accepts_inbox: true
+      accepts_agents: true
+      research_on_arrival: false
 
 gap_framework:
   - "monitored_conditions"

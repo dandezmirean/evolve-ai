@@ -63,7 +63,7 @@ Based on gaps or issues identified in the snapshot:
 - Note which inbox topics might inform strategic direction.
 
 ### If Autonomous Run:
-- Read source outputs — monitoring data, health check results, recent logs.
+- Read lens feed outputs — monitoring data, health check results, recent logs from per-concern inboxes.
 - Check for any external signals that should influence strategy.
 - Read `{{WORKSPACE}}/system-state.md` if it exists from a previous iteration.
 

@@ -248,11 +248,11 @@ _select_notifications() {
 }
 
 # ---------------------------------------------------------------------------
-# _configure_sources
-# Show each genome's suggested sources, allow toggle.
+# _configure_lens
+# Show each genome's lens concerns and their feeds, allow toggle.
 # ---------------------------------------------------------------------------
-_configure_sources() {
-    echo "--- Sensory Organs ---"
+_configure_lens() {
+    echo "--- Lens Concerns ---"
     echo ""
 
     local genomes=($SELECTED_GENOMES)
@@ -267,17 +267,37 @@ _configure_sources() {
             continue
         fi
 
-        echo "The $genome genome defines these intelligence sources:"
-        # Extract source names from genome.yaml
-        grep -A1 '^\s*- name:' "$genome_yaml" 2>/dev/null | grep 'name:' | while read -r line; do
-            local name
-            name="$(echo "$line" | sed 's/.*name:[[:space:]]*//' | tr -d '"')"
-            echo "  [x] $name"
-        done
+        echo "The $genome genome watches for these concerns:"
+        # Extract concern names and descriptions from genome.yaml
+        local in_lens=0
+        local in_concerns=0
+        while IFS= read -r line; do
+            if echo "$line" | grep -qE '^lens:'; then
+                in_lens=1
+                continue
+            fi
+            if [[ "$in_lens" -eq 1 ]] && echo "$line" | grep -qE '^[a-z]'; then
+                break
+            fi
+            if [[ "$in_lens" -eq 0 ]]; then
+                continue
+            fi
+            if echo "$line" | grep -qE '^\s+concerns:'; then
+                in_concerns=1
+                continue
+            fi
+            if [[ "$in_concerns" -eq 1 ]]; then
+                if echo "$line" | grep -qE '^\s{4}-\s*name:'; then
+                    local cname
+                    cname="$(echo "$line" | sed 's/.*name:[[:space:]]*//' | tr -d '"')"
+                    echo "  [x] $cname"
+                fi
+            fi
+        done < "$genome_yaml"
         echo ""
 
-        if ! _prompt_confirm "Accept default sources for $genome?"; then
-            echo "  (Source customization saved for post-init editing via 'evolve genome edit $genome')"
+        if ! _prompt_confirm "Accept default lens concerns for $genome?"; then
+            echo "  (Lens customization saved for post-init editing via 'evolve genome edit $genome')"
         fi
         echo ""
     done
@@ -509,14 +529,12 @@ init_memory() {
 
 # ---------------------------------------------------------------------------
 # init_inbox <evolve_root>
-# Creates inbox directory structure.
+# Creates inbox directory structure with per-concern directories.
 # ---------------------------------------------------------------------------
 init_inbox() {
     local evolve_root="$1"
     local inbox_dir="$evolve_root/inbox"
 
-    mkdir -p "$inbox_dir/pending"
-    mkdir -p "$inbox_dir/processed"
     mkdir -p "$inbox_dir/sources"
 
     echo "  Inbox directory created at $inbox_dir"
@@ -560,7 +578,7 @@ generate_custom_genome() {
 
     echo "" >&2
     echo "  Custom genome '$genome_name' created at $genome_dir" >&2
-    echo "  Edit genome.yaml to customize scan commands, health checks, sources, etc." >&2
+    echo "  Edit genome.yaml to customize scan commands, health checks, lens concerns, etc." >&2
     echo "  Or use 'evolve genome edit $genome_name' after init." >&2
     echo "" >&2
 
@@ -593,8 +611,8 @@ run_init() {
     # 4. Select notification channel
     _select_notifications
 
-    # 5. Configure sources
-    _configure_sources
+    # 5. Configure lens concerns
+    _configure_lens
 
     # 6. Configure resource constraints
     _configure_resources
@@ -631,8 +649,8 @@ run_init() {
     echo "    evolve genome edit    Modify genome configuration"
     echo "    evolve genome create  Create a new genome conversationally"
     echo ""
-    echo "  Drop intelligence files into ./inbox/ or wait for"
-    echo "  sources to populate."
+    echo "  Drop intelligence files into per-concern inbox dirs or"
+    echo "  wait for lens feeds to populate."
     echo ""
 
     trap - INT

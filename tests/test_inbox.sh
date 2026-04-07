@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# tests/test_inbox.sh — tests for inbox watcher, manifest, and source adapters
+# tests/test_inbox.sh — tests for inbox watcher, manifest, and feed adapters
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -10,12 +10,12 @@ source "$SCRIPT_DIR/helpers.sh"
 source "$PROJECT_ROOT/core/inbox/manifest.sh"
 # shellcheck source=core/inbox/watcher.sh
 source "$PROJECT_ROOT/core/inbox/watcher.sh"
-# shellcheck source=core/inbox/sources/command.sh
-source "$PROJECT_ROOT/core/inbox/sources/command.sh"
-# shellcheck source=core/inbox/sources/manual.sh
-source "$PROJECT_ROOT/core/inbox/sources/manual.sh"
-# shellcheck source=core/inbox/source-runner.sh
-source "$PROJECT_ROOT/core/inbox/source-runner.sh"
+# shellcheck source=core/lens/adapters/command.sh
+source "$PROJECT_ROOT/core/lens/adapters/command.sh"
+# shellcheck source=core/lens/adapters/manual.sh
+source "$PROJECT_ROOT/core/lens/adapters/manual.sh"
+# shellcheck source=core/lens/feed-runner.sh
+source "$PROJECT_ROOT/core/lens/feed-runner.sh"
 
 # ---------------------------------------------------------------------------
 # 1. manifest_init creates valid empty manifest
@@ -44,19 +44,19 @@ test_manifest_update() {
     setup_test_env
 
     manifest_init "$EVOLVE_ROOT"
-    manifest_update "$EVOLVE_ROOT" "test-file.md" "abc123def456"
+    manifest_update "$EVOLVE_ROOT" "test-concern/test-file.md" "abc123def456"
 
     local manifest_file="$EVOLVE_ROOT/inbox/.manifest.json"
     local status
-    status="$(jq -r '.files["test-file.md"].status' "$manifest_file")"
+    status="$(jq -r '.files["test-concern/test-file.md"].status' "$manifest_file")"
     assert_eq "processed" "$status" "manifest entry has status=processed"
 
     local md5
-    md5="$(jq -r '.files["test-file.md"].md5' "$manifest_file")"
+    md5="$(jq -r '.files["test-concern/test-file.md"].md5' "$manifest_file")"
     assert_eq "abc123def456" "$md5" "manifest entry has correct md5"
 
     local ts
-    ts="$(jq -r '.files["test-file.md"].processed_at' "$manifest_file")"
+    ts="$(jq -r '.files["test-concern/test-file.md"].processed_at' "$manifest_file")"
     assert_contains "$ts" "T" "manifest entry has ISO timestamp"
 
     teardown_test_env
@@ -71,28 +71,28 @@ test_manifest_is_new_unknown() {
 
     manifest_init "$EVOLVE_ROOT"
 
-    assert_exit_code 0 "unknown file is new" manifest_is_new "$EVOLVE_ROOT" "never-seen.md"
+    assert_exit_code 0 "unknown file is new" manifest_is_new "$EVOLVE_ROOT" "test-concern/never-seen.md"
 
     teardown_test_env
 }
 
 # ---------------------------------------------------------------------------
-# 4. manifest_is_new returns 1 for processed file
+# 4. manifest_is_new returns 1 for processed file (concern-namespaced)
 # ---------------------------------------------------------------------------
 test_manifest_is_new_processed() {
     echo "test_manifest_is_new_processed"
     setup_test_env
 
-    mkdir -p "$EVOLVE_ROOT/inbox/pending"
-    echo "hello world" > "$EVOLVE_ROOT/inbox/pending/known.md"
+    mkdir -p "$EVOLVE_ROOT/inbox/test-concern/pending"
+    echo "hello world" > "$EVOLVE_ROOT/inbox/test-concern/pending/known.md"
 
     local md5
-    md5="$(manifest_compute_md5 "$EVOLVE_ROOT/inbox/pending/known.md")"
+    md5="$(manifest_compute_md5 "$EVOLVE_ROOT/inbox/test-concern/pending/known.md")"
 
     manifest_init "$EVOLVE_ROOT"
-    manifest_update "$EVOLVE_ROOT" "known.md" "$md5"
+    manifest_update "$EVOLVE_ROOT" "test-concern/known.md" "$md5"
 
-    assert_exit_code 1 "processed file is not new" manifest_is_new "$EVOLVE_ROOT" "known.md"
+    assert_exit_code 1 "processed file is not new" manifest_is_new "$EVOLVE_ROOT" "test-concern/known.md"
 
     teardown_test_env
 }
@@ -104,14 +104,14 @@ test_manifest_is_new_md5_changed() {
     echo "test_manifest_is_new_md5_changed"
     setup_test_env
 
-    mkdir -p "$EVOLVE_ROOT/inbox/pending"
-    echo "original content" > "$EVOLVE_ROOT/inbox/pending/changed.md"
+    mkdir -p "$EVOLVE_ROOT/inbox/test-concern/pending"
+    echo "original content" > "$EVOLVE_ROOT/inbox/test-concern/pending/changed.md"
 
     manifest_init "$EVOLVE_ROOT"
-    manifest_update "$EVOLVE_ROOT" "changed.md" "old_md5_value"
+    manifest_update "$EVOLVE_ROOT" "test-concern/changed.md" "old_md5_value"
 
     # File has different content now, so md5 won't match "old_md5_value"
-    assert_exit_code 0 "file with changed md5 is new" manifest_is_new "$EVOLVE_ROOT" "changed.md"
+    assert_exit_code 0 "file with changed md5 is new" manifest_is_new "$EVOLVE_ROOT" "test-concern/changed.md"
 
     teardown_test_env
 }
@@ -123,25 +123,25 @@ test_manifest_check_deleted() {
     echo "test_manifest_check_deleted"
     setup_test_env
 
-    mkdir -p "$EVOLVE_ROOT/inbox/pending" "$EVOLVE_ROOT/inbox/processed"
+    mkdir -p "$EVOLVE_ROOT/inbox/test-concern/pending" "$EVOLVE_ROOT/inbox/test-concern/processed"
 
     manifest_init "$EVOLVE_ROOT"
-    manifest_update "$EVOLVE_ROOT" "still-here.md" "abc"
-    manifest_update "$EVOLVE_ROOT" "gone.md" "def"
+    manifest_update "$EVOLVE_ROOT" "test-concern/still-here.md" "abc"
+    manifest_update "$EVOLVE_ROOT" "test-concern/gone.md" "def"
 
-    # Create "still-here.md" but not "gone.md"
-    echo "still here" > "$EVOLVE_ROOT/inbox/processed/still-here.md"
+    # Create "still-here.md" in processed but not "gone.md"
+    echo "still here" > "$EVOLVE_ROOT/inbox/test-concern/processed/still-here.md"
 
     local deleted_count
     deleted_count="$(manifest_check_deleted "$EVOLVE_ROOT")"
     assert_eq "1" "$deleted_count" "detected 1 deleted file"
 
     local status
-    status="$(jq -r '.files["gone.md"].status' "$EVOLVE_ROOT/inbox/.manifest.json")"
+    status="$(jq -r '.files["test-concern/gone.md"].status' "$EVOLVE_ROOT/inbox/.manifest.json")"
     assert_eq "deleted" "$status" "gone.md marked as deleted"
 
     local still_status
-    still_status="$(jq -r '.files["still-here.md"].status' "$EVOLVE_ROOT/inbox/.manifest.json")"
+    still_status="$(jq -r '.files["test-concern/still-here.md"].status' "$EVOLVE_ROOT/inbox/.manifest.json")"
     assert_eq "processed" "$still_status" "still-here.md remains processed"
 
     teardown_test_env
@@ -175,7 +175,7 @@ test_inbox_check_empty() {
     echo "test_inbox_check_empty"
     setup_test_env
 
-    mkdir -p "$EVOLVE_ROOT/inbox/pending"
+    mkdir -p "$EVOLVE_ROOT/inbox/test-concern/pending"
 
     assert_exit_code 1 "empty inbox returns 1" inbox_check "$EVOLVE_ROOT"
 
@@ -183,14 +183,14 @@ test_inbox_check_empty() {
 }
 
 # ---------------------------------------------------------------------------
-# 9. inbox_check returns 0 when items present
+# 9. inbox_check returns 0 when items present in concern directory
 # ---------------------------------------------------------------------------
 test_inbox_check_with_items() {
     echo "test_inbox_check_with_items"
     setup_test_env
 
-    mkdir -p "$EVOLVE_ROOT/inbox/pending"
-    echo "new signal" > "$EVOLVE_ROOT/inbox/pending/signal-2026-04-06.md"
+    mkdir -p "$EVOLVE_ROOT/inbox/security-posture/pending"
+    echo "new signal" > "$EVOLVE_ROOT/inbox/security-posture/pending/signal-2026-04-06.md"
 
     assert_exit_code 0 "inbox with items returns 0" inbox_check "$EVOLVE_ROOT"
 
@@ -198,16 +198,18 @@ test_inbox_check_with_items() {
 }
 
 # ---------------------------------------------------------------------------
-# 10. inbox_list_pending excludes dotfiles
+# 10. inbox_list_pending excludes dotfiles and sources dir
 # ---------------------------------------------------------------------------
 test_inbox_list_pending_excludes_dotfiles() {
     echo "test_inbox_list_pending_excludes_dotfiles"
     setup_test_env
 
-    mkdir -p "$EVOLVE_ROOT/inbox/pending"
-    echo "visible" > "$EVOLVE_ROOT/inbox/pending/visible.md"
-    echo "hidden" > "$EVOLVE_ROOT/inbox/pending/.hidden.md"
-    echo "also visible" > "$EVOLVE_ROOT/inbox/pending/also-visible.md"
+    mkdir -p "$EVOLVE_ROOT/inbox/test-concern/pending"
+    echo "visible" > "$EVOLVE_ROOT/inbox/test-concern/pending/visible.md"
+    echo "hidden" > "$EVOLVE_ROOT/inbox/test-concern/pending/.hidden.md"
+    echo "also visible" > "$EVOLVE_ROOT/inbox/test-concern/pending/also-visible.md"
+    # Create sources dir which should be skipped
+    mkdir -p "$EVOLVE_ROOT/inbox/sources"
 
     local listing
     listing="$(inbox_list_pending "$EVOLVE_ROOT")"
@@ -234,20 +236,20 @@ test_inbox_list_pending_excludes_dotfiles() {
 }
 
 # ---------------------------------------------------------------------------
-# 11. inbox_process_item moves file and updates manifest
+# 11. inbox_process_item moves file from concern/pending to concern/processed
 # ---------------------------------------------------------------------------
 test_inbox_process_item() {
     echo "test_inbox_process_item"
     setup_test_env
 
-    mkdir -p "$EVOLVE_ROOT/inbox/pending" "$EVOLVE_ROOT/inbox/processed"
-    echo "item content" > "$EVOLVE_ROOT/inbox/pending/to-process.md"
+    mkdir -p "$EVOLVE_ROOT/inbox/test-concern/pending" "$EVOLVE_ROOT/inbox/test-concern/processed"
+    echo "item content" > "$EVOLVE_ROOT/inbox/test-concern/pending/to-process.md"
 
     manifest_init "$EVOLVE_ROOT"
-    inbox_process_item "$EVOLVE_ROOT" "$EVOLVE_ROOT/inbox/pending/to-process.md"
+    inbox_process_item "$EVOLVE_ROOT" "$EVOLVE_ROOT/inbox/test-concern/pending/to-process.md"
 
     # File should be moved
-    if [[ -f "$EVOLVE_ROOT/inbox/pending/to-process.md" ]]; then
+    if [[ -f "$EVOLVE_ROOT/inbox/test-concern/pending/to-process.md" ]]; then
         TESTS_RUN=$(( TESTS_RUN + 1 ))
         TESTS_FAILED=$(( TESTS_FAILED + 1 ))
         echo "  FAIL: file still in pending"
@@ -257,11 +259,11 @@ test_inbox_process_item() {
         echo "  PASS: file removed from pending"
     fi
 
-    assert_file_exists "$EVOLVE_ROOT/inbox/processed/to-process.md" "file moved to processed"
+    assert_file_exists "$EVOLVE_ROOT/inbox/test-concern/processed/to-process.md" "file moved to processed"
 
     local status
-    status="$(jq -r '.files["to-process.md"].status' "$EVOLVE_ROOT/inbox/.manifest.json")"
-    assert_eq "processed" "$status" "manifest updated with processed status"
+    status="$(jq -r '.files["test-concern/to-process.md"].status' "$EVOLVE_ROOT/inbox/.manifest.json")"
+    assert_eq "processed" "$status" "manifest updated with processed status (concern-namespaced key)"
 
     teardown_test_env
 }
@@ -273,7 +275,7 @@ test_source_command_run_creates_file() {
     echo "test_source_command_run_creates_file"
     setup_test_env
 
-    local output_dir="$TEST_TMPDIR/inbox/pending"
+    local output_dir="$TEST_TMPDIR/inbox/test-concern/pending"
     mkdir -p "$output_dir"
 
     source_command_run "test-cmd" "echo 'hello from command'" "$output_dir"
@@ -299,7 +301,7 @@ test_source_command_run_skips_empty() {
     echo "test_source_command_run_skips_empty"
     setup_test_env
 
-    local output_dir="$TEST_TMPDIR/inbox/pending"
+    local output_dir="$TEST_TMPDIR/inbox/test-concern/pending"
     mkdir -p "$output_dir"
 
     source_command_run "empty-cmd" "true" "$output_dir"
@@ -329,7 +331,7 @@ test_source_manual_scan() {
     setup_test_env
 
     local watch_dir="$TEST_TMPDIR/watch"
-    local output_dir="$TEST_TMPDIR/inbox/pending"
+    local output_dir="$TEST_TMPDIR/inbox/test-concern/pending"
     mkdir -p "$watch_dir" "$output_dir"
 
     echo "file one" > "$watch_dir/one.md"

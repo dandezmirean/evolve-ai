@@ -25,7 +25,7 @@ This phase only runs during **directed** (inbox-triggered) pipeline runs.
 ## Step 1 — Read Inbox Items
 
 1. Read `{{WORKSPACE}}/inbox-diff.txt` in full.
-2. Parse each item. Items may be:
+2. Parse each item. Items are tagged with their **lens concern** (e.g., `--- [concern: security-posture] filename.md ---`). Use the concern tag for categorization and routing. Items may be:
    - Plain text suggestions
    - Structured YAML/JSON entries
    - Error reports or log snippets

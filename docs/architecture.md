@@ -133,8 +133,8 @@ The `max_iterations` setting (default: 10) provides a hard upper bound.
 |---|---|
 | `workspace/YYYY-MM-DD/` | Per-run workspace with pool.json and phase artifacts |
 | `memory/` | Persistent memory files (changelog, metrics, vision, etc.) |
-| `inbox/pending/` | Incoming intelligence items awaiting processing |
-| `inbox/processed/` | Processed inbox items |
+| `inbox/{concern}/pending/` | Incoming intelligence items per lens concern |
+| `inbox/{concern}/processed/` | Processed inbox items per lens concern |
 | `inbox/.manifest.json` | MD5-based manifest tracking processed files |
 | `resume-context/YYYY-MM-DD/` | Resume context files for human review |
 | `directives/` | Active directive YAML files |
@@ -156,9 +156,10 @@ The `max_iterations` setting (default: 10) provides a hard upper bound.
 | Memory | `core/memory/manager.sh` | Memory file CRUD, changelog pruning, metrics append |
 | Notifications | `core/notifications/engine.sh` | Multi-provider notification routing |
 | Providers | `core/providers/interface.sh` | LLM provider dispatch and usage logging |
+| Lens Engine | `core/lens/engine.sh` | Concern-based intelligence gathering layer |
+| Feed Runner | `core/lens/feed-runner.sh` | Feed adapter dispatch per concern (RSS, command, manual, webhook) |
 | Inbox | `core/inbox/watcher.sh` | Polling inbox watcher, one-shot check |
 | Manifest | `core/inbox/manifest.sh` | MD5-based change detection for inbox items |
-| Sources | `core/inbox/source-runner.sh` | Source adapter dispatch (RSS, command, manual, webhook) |
 | Resume | `core/resume/context-generator.sh` | Generate resume context markdown files |
 | Resume Runner | `core/resume/resume-runner.sh` | Interactive resume session with 6 action types |
 | Directives | `core/directives/manager.sh` | CRUD for lock/priority/constraint/override directives |
@@ -172,7 +173,7 @@ The `max_iterations` setting (default: 10) provides a hard upper bound.
 Each phase reads from and writes to the workspace directory and memory:
 
 ```
-  Inbox items --> digest --> pool.json (new entries)
+  Lens concerns --> inbox-diff.txt --> digest --> pool.json (new entries)
                               |
   Memory + scan data --> strategize --> strategy-notes.md
                               |

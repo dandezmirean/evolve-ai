@@ -8,6 +8,7 @@ source "$SCRIPT_DIR_ORCH/pool.sh"
 source "$SCRIPT_DIR_ORCH/lock.sh"
 source "$SCRIPT_DIR_ORCH/housekeeping.sh"
 source "$SCRIPT_DIR_ORCH/resources.sh"
+source "$SCRIPT_DIR_ORCH/lens/engine.sh"
 
 # ---------------------------------------------------------------------------
 # create_workspace <evolve_root> [date_suffix]
@@ -250,7 +251,13 @@ run_pipeline() {
     local phase_rc
 
     if [[ "$mode" == "directed" ]]; then
-        # Directed: digest → strategize → analyze → challenge → impl loop → metrics
+        # Directed: lens gather → digest → strategize → analyze → challenge → impl loop → metrics
+        # Gather all pending items from lens concerns into inbox-diff.txt
+        local _genome_yaml
+        _genome_yaml="$(config_get "targets.0.genome" 2>/dev/null || true)"
+        if [[ -n "$_genome_yaml" ]] && [[ -f "$evolve_root/genomes/$_genome_yaml/genome.yaml" ]]; then
+            lens_gather_all_pending "$evolve_root" "$evolve_root/genomes/$_genome_yaml/genome.yaml" "$workspace"
+        fi
         run_phase "digest"     "$(_prompt_for digest)"     "$workspace" "$max_turns" || { phase_rc=$?; [[ $phase_rc -eq 2 ]] && { release_lock "$lock_file"; trap - ERR INT TERM; return 2; }; }
         run_phase "strategize" "$(_prompt_for strategize)" "$workspace" "$max_turns" || { phase_rc=$?; [[ $phase_rc -eq 2 ]] && { release_lock "$lock_file"; trap - ERR INT TERM; return 2; }; }
         run_phase "analyze"    "$(_prompt_for analyze)"    "$workspace" "$max_turns" || { phase_rc=$?; [[ $phase_rc -eq 2 ]] && { release_lock "$lock_file"; trap - ERR INT TERM; return 2; }; }

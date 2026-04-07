@@ -168,7 +168,8 @@ evolve-ai/
     phases/                   8 phase prompt templates
     scoring/                  Four-layer scoring engine
     memory/                   Persistent cross-run state (7 memory files)
-    inbox/                    Reactive engine + intelligence source adapters
+    lens/                     Lens engine + concern-based feed adapters (rss, command, manual, webhook)
+    inbox/                    Reactive inbox watcher + manifest tracking
     resume/                   Human re-entry context system
     notifications/            Telegram, Slack, Discord, stdout
     providers/                LLM provider abstraction (Claude, OpenAI)
@@ -206,7 +207,7 @@ See [docs/architecture.md](docs/architecture.md) for the complete design breakdo
 
 ## Genomes
 
-A genome encodes the complete identity definition for a target system — scan commands, health checks, intelligence sources, scoring rules, safety constraints, and rollback strategies. It is the DNA that tells evolve-ai how to evolve that target.
+A genome encodes the complete identity definition for a target system — scan commands, health checks, lens concerns (intelligence gathering), scoring rules, safety constraints, and rollback strategies. It is the DNA that tells evolve-ai how to evolve that target.
 
 **Built-in genomes:**
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # core/inbox/manifest.sh — Manifest tracker for inbox items
 # Tracks processed files using md5sum. Stores state in inbox/.manifest.json.
+# Keys are concern-namespaced: "{concern_name}/{filename}" for per-concern items.
 
 SCRIPT_DIR_MANIFEST="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -24,6 +25,7 @@ manifest_init() {
 # ---------------------------------------------------------------------------
 # manifest_update <evolve_root> <filename> <md5>
 # Marks a file as processed with its md5 hash and current timestamp.
+# filename can be a concern-namespaced key: "concern-name/file.md"
 # ---------------------------------------------------------------------------
 manifest_update() {
     local evolve_root="$1"
@@ -48,6 +50,7 @@ manifest_update() {
 # manifest_is_new <evolve_root> <filename>
 # Returns 0 if the file is new (not in manifest or md5 changed).
 # Returns 1 if already processed with same md5.
+# filename can be concern-namespaced: "concern-name/file.md"
 # ---------------------------------------------------------------------------
 manifest_is_new() {
     local evolve_root="$1"
@@ -68,15 +71,35 @@ manifest_is_new() {
     local stored_md5
     stored_md5="$(jq -r --arg fn "$filename" '.files[$fn].md5 // ""' "$manifest_file")"
 
-    # Compute current md5 — check both pending and processed dirs
+    # Compute current md5 — resolve file path from the key
+    # Key format: "concern-name/file.md" -> inbox/concern-name/pending/file.md
+    #          or plain "file.md" -> inbox/pending/file.md (legacy)
     local current_md5=""
-    local file_path="$evolve_root/inbox/pending/$filename"
-    if [[ -f "$file_path" ]]; then
-        current_md5="$(manifest_compute_md5 "$file_path")"
-    else
-        file_path="$evolve_root/inbox/processed/$filename"
+    local file_path=""
+
+    if [[ "$filename" == */* ]]; then
+        # Concern-namespaced key
+        local concern_name="${filename%%/*}"
+        local base_name="${filename#*/}"
+        file_path="$evolve_root/inbox/$concern_name/pending/$base_name"
         if [[ -f "$file_path" ]]; then
             current_md5="$(manifest_compute_md5 "$file_path")"
+        else
+            file_path="$evolve_root/inbox/$concern_name/processed/$base_name"
+            if [[ -f "$file_path" ]]; then
+                current_md5="$(manifest_compute_md5 "$file_path")"
+            fi
+        fi
+    else
+        # Legacy flat key
+        file_path="$evolve_root/inbox/pending/$filename"
+        if [[ -f "$file_path" ]]; then
+            current_md5="$(manifest_compute_md5 "$file_path")"
+        else
+            file_path="$evolve_root/inbox/processed/$filename"
+            if [[ -f "$file_path" ]]; then
+                current_md5="$(manifest_compute_md5 "$file_path")"
+            fi
         fi
     fi
 
@@ -91,8 +114,8 @@ manifest_is_new() {
 
 # ---------------------------------------------------------------------------
 # manifest_check_deleted <evolve_root>
-# Scans manifest for files that no longer exist in inbox/pending/ or
-# inbox/processed/. Marks them as "deleted" in manifest.
+# Scans manifest for files that no longer exist in inbox directories.
+# Marks them as "deleted" in manifest.
 # Outputs the count of newly-detected deletions.
 # ---------------------------------------------------------------------------
 manifest_check_deleted() {
@@ -113,8 +136,25 @@ manifest_check_deleted() {
     fi
 
     while IFS= read -r filename; do
-        if [[ ! -f "$evolve_root/inbox/pending/$filename" && \
-              ! -f "$evolve_root/inbox/processed/$filename" ]]; then
+        local found=0
+
+        if [[ "$filename" == */* ]]; then
+            # Concern-namespaced key
+            local concern_name="${filename%%/*}"
+            local base_name="${filename#*/}"
+            if [[ -f "$evolve_root/inbox/$concern_name/pending/$base_name" ]] || \
+               [[ -f "$evolve_root/inbox/$concern_name/processed/$base_name" ]]; then
+                found=1
+            fi
+        else
+            # Legacy flat key
+            if [[ -f "$evolve_root/inbox/pending/$filename" ]] || \
+               [[ -f "$evolve_root/inbox/processed/$filename" ]]; then
+                found=1
+            fi
+        fi
+
+        if [[ "$found" -eq 0 ]]; then
             # File is gone — mark as deleted
             local tmp_file
             tmp_file="$(mktemp)"
@@ -134,7 +174,6 @@ manifest_check_deleted() {
 # ---------------------------------------------------------------------------
 # manifest_get_stats <evolve_root>
 # Outputs JSON with: total_processed, total_deleted, total_pending
-# (pending = files in inbox/pending/ not in manifest as processed)
 # ---------------------------------------------------------------------------
 manifest_get_stats() {
     local evolve_root="$1"
@@ -148,21 +187,37 @@ manifest_get_stats() {
     local total_deleted
     total_deleted="$(jq '[.files | to_entries[] | select(.value.status == "deleted")] | length' "$manifest_file")"
 
-    # Count files in pending/ that are not in manifest as processed
+    # Count files in per-concern pending/ dirs that are not in manifest as processed
     local total_pending=0
-    if [[ -d "$evolve_root/inbox/pending" ]]; then
-        for f in "$evolve_root/inbox/pending"/*; do
-            if [[ -f "$f" ]]; then
-                local basename
-                basename="$(basename "$f")"
-                # Skip dotfiles
-                if [[ "$basename" == .* ]]; then
-                    continue
-                fi
-                if manifest_is_new "$evolve_root" "$basename"; then
-                    (( total_pending++ )) || true
-                fi
+
+    # Scan all concern directories
+    if [[ -d "$evolve_root/inbox" ]]; then
+        for concern_dir in "$evolve_root/inbox"/*/; do
+            local pending_dir="$concern_dir/pending"
+            if [[ ! -d "$pending_dir" ]]; then
+                continue
             fi
+
+            local dirname
+            dirname="$(basename "$concern_dir")"
+            if [[ "$dirname" == "sources" ]]; then
+                continue
+            fi
+
+            for f in "$pending_dir"/*; do
+                if [[ -f "$f" ]]; then
+                    local basename
+                    basename="$(basename "$f")"
+                    # Skip dotfiles
+                    if [[ "$basename" == .* ]]; then
+                        continue
+                    fi
+                    local manifest_key="${dirname}/${basename}"
+                    if manifest_is_new "$evolve_root" "$manifest_key"; then
+                        (( total_pending++ )) || true
+                    fi
+                fi
+            done
         done
     fi
 

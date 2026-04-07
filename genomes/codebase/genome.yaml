@@ -17,22 +17,44 @@ health_checks:
     command: ""
     expect: "exit_code_0"
 
-sources:
-  - name: "dependency-updates"
-    type: "command"
-    schedule: "daily"
-    description: "Check for outdated dependencies"
-    command: ""
-  - name: "vulnerability-scan"
-    type: "command"
-    schedule: "daily"
-    description: "Security vulnerability detection"
-    command: ""
-  - name: "language-releases"
-    type: "rss"
-    schedule: "weekly"
-    description: "Language/runtime release notes"
-    url: ""
+lens:
+  concerns:
+    - name: "dependency-health"
+      description: "Outdated packages, security vulnerabilities, breaking changes"
+      feeds:
+        - type: "command"
+          command: ""
+          schedule: "daily"
+          description: "Outdated dependency check"
+        - type: "command"
+          command: ""
+          schedule: "daily"
+          description: "Security vulnerability scan"
+      accepts_inbox: true
+      accepts_agents: true
+      research_on_arrival: true
+
+    - name: "code-quality"
+      description: "Lint warnings, type errors, test failures, coverage drift"
+      feeds:
+        - type: "command"
+          command: ""
+          schedule: "daily"
+          description: "Lint and test results"
+      accepts_inbox: true
+      accepts_agents: false
+      research_on_arrival: false
+
+    - name: "ecosystem-changes"
+      description: "Language releases, framework updates, community patterns"
+      feeds:
+        - type: "rss"
+          url: ""
+          schedule: "weekly"
+          description: "Language/runtime release notes"
+      accepts_inbox: true
+      accepts_agents: false
+      research_on_arrival: true
 
 gap_framework:
   - "test_coverage"

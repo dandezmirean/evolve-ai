@@ -78,8 +78,8 @@ In either case, focus on identifying:
 
 Gather context for observation-based proposals:
 
-1. **If directed run**: Read `{{WORKSPACE}}/digest-summary.md` and `{{WORKSPACE}}/research/topic-*.md` for inbox-sourced intelligence.
-2. **If autonomous run**: Read any monitoring outputs, recent logs, or health check results available in the workspace or `{{EVOLVE_ROOT}}`.
+1. **If directed run**: Read `{{WORKSPACE}}/digest-summary.md` and `{{WORKSPACE}}/research/topic-*.md` for inbox-sourced intelligence. Items are tagged by lens concern.
+2. **If autonomous run**: Read lens feed outputs from per-concern inboxes, recent logs, or health check results available in the workspace or `{{EVOLVE_ROOT}}`.
 3. Read `{{WORKSPACE}}/strategy-notes.md` if it exists — understand what strategic gaps were identified (but do NOT duplicate big bets as quick wins).
 4. Read `{{EVOLVE_ROOT}}/changelog.md` — check what has been recently changed to avoid proposing already-addressed improvements.
 

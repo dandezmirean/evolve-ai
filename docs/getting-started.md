@@ -76,9 +76,9 @@ Where should results be sent?
 - Discord webhook
 - Multiple channels
 
-### Step 5: Intelligence Sources
+### Step 5: Lens Concerns
 
-Each genome comes with suggested intelligence sources (RSS feeds, log scanners, etc.). Accept the defaults or defer customization to post-init editing.
+Each genome comes with suggested lens concerns (security posture, resource drift, etc.), each with automated feeds (RSS, commands). Accept the defaults or defer customization to post-init editing.
 
 ### Step 6: Resource Constraints
 
@@ -115,7 +115,7 @@ After completing all steps, the wizard generates:
 ./bin/evolve run
 ```
 
-This triggers a full autonomous pipeline cycle. On the first run with no intelligence sources populated, the pipeline will likely:
+This triggers a full autonomous pipeline cycle. On the first run with no lens feeds populated, the pipeline will likely:
 
 1. Scan your system state
 2. Identify a few improvement opportunities
@@ -214,53 +214,57 @@ Enable it:
 sudo systemctl enable --now evolve-ai.timer
 ```
 
-## Adding Intelligence Sources
+## Adding Lens Concerns
 
-Intelligence sources feed the pipeline with signals about what to improve. There are four adapter types:
+Lens concerns define what your genome watches for, organized by topic rather than delivery mechanism. Each concern can have multiple feeds.
 
 ### RSS Feeds
 
-Add security advisories, release feeds, or news sources to your genome's `sources.yaml`:
+Add RSS feeds to a concern in your genome's `genome.yaml`:
 
 ```yaml
-sources:
-  - name: "debian-security"
-    type: "rss"
-    schedule: "daily"
-    url: "https://www.debian.org/security/dsa"
-    description: "Debian security advisories"
+lens:
+  concerns:
+    - name: "security-posture"
+      description: "Vulnerabilities and advisories"
+      feeds:
+        - type: "rss"
+          url: "https://www.debian.org/security/dsa"
+          schedule: "daily"
+          description: "Debian security advisories"
+      accepts_inbox: true
+      research_on_arrival: true
 ```
 
 ### Command Output
 
-Run shell commands that produce intelligence:
+Run shell commands as feeds within a concern:
 
 ```yaml
-sources:
-  - name: "error-log-review"
-    type: "command"
-    schedule: "daily"
-    command: "journalctl --since='24 hours ago' --priority=err --no-pager -q"
-    description: "System error log review"
+lens:
+  concerns:
+    - name: "service-health"
+      description: "Service status and errors"
+      feeds:
+        - type: "command"
+          command: "journalctl --since='24 hours ago' --priority=err --no-pager -q"
+          schedule: "daily"
+          description: "System error log review"
 ```
 
 ### Manual Drops
 
-Drop files directly into the inbox:
+Drop files into a concern's inbox directory:
 
 ```bash
-echo "Consider adding log rotation for nginx" > inbox/pending/nginx-logs.txt
+echo "Consider adding log rotation for nginx" > inbox/service-health/pending/nginx-logs.txt
 ```
 
-The inbox watcher picks these up and triggers a directed run.
+The inbox watcher picks these up and triggers a directed run. Any concern with `accepts_inbox: true` accepts human drops.
 
 ### Webhooks
 
-The webhook adapter listens for HTTP POST requests. Start it separately:
-
-```bash
-# Configure in your genome's sources.yaml, then start the listener
-```
+The webhook adapter listens for HTTP POST requests. Configure a concern with `accepts_agents: true` and start the webhook listener separately.
 
 ## Customizing Safety Rules
 

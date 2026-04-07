@@ -38,7 +38,7 @@ test_init_cycle() {
 
     # Simulate user inputs:
     # 1=infrastructure, /tmp/target, 1=claude-max, 1=stdout,
-    # Y=accept sources, 1500=ram, 85=disk, Y=accept safety,
+    # Y=accept lens concerns, 1500=ram, 85=disk, Y=accept safety,
     # 0 13 * * *=schedule, 300=poll, 0 13 * * 0=meta,
     # 3=threshold, 7=window, manual=resume
     printf '1\n/tmp/target\n1\n1\nY\n1500\n85\nY\n0 13 * * *\n300\n0 13 * * 0\n3\n7\nmanual\n' | \
@@ -48,14 +48,14 @@ test_init_cycle() {
     assert_file_exists "$TEST_TMPDIR/memory/MEMORY.md" "memory dir initialized"
     assert_file_exists "$TEST_TMPDIR/memory/changelog.md" "changelog template copied"
 
-    # Verify inbox dirs created
+    # Verify inbox dir created
     local inbox_exists=0
-    [[ -d "$TEST_TMPDIR/inbox/pending" ]] && inbox_exists=1
-    assert_eq "1" "$inbox_exists" "inbox/pending directory exists"
+    [[ -d "$TEST_TMPDIR/inbox" ]] && inbox_exists=1
+    assert_eq "1" "$inbox_exists" "inbox directory exists"
 
-    local inbox_processed=0
-    [[ -d "$TEST_TMPDIR/inbox/processed" ]] && inbox_processed=1
-    assert_eq "1" "$inbox_processed" "inbox/processed directory exists"
+    local inbox_sources=0
+    [[ -d "$TEST_TMPDIR/inbox/sources" ]] && inbox_sources=1
+    assert_eq "1" "$inbox_sources" "inbox/sources directory exists"
 
     # Verify config content
     local config_content
@@ -311,28 +311,29 @@ test_manifest_tracking() {
     manifest_init "$TEST_TMPDIR"
     assert_file_exists "$TEST_TMPDIR/inbox/.manifest.json" "manifest file created"
 
-    # Create files in inbox/pending
-    mkdir -p "$TEST_TMPDIR/inbox/pending"
-    echo "intelligence item 1" > "$TEST_TMPDIR/inbox/pending/item1.txt"
-    echo "intelligence item 2" > "$TEST_TMPDIR/inbox/pending/item2.txt"
+    # Create files in per-concern inbox directory
+    mkdir -p "$TEST_TMPDIR/inbox/test-concern/pending"
+    mkdir -p "$TEST_TMPDIR/inbox/test-concern/processed"
+    echo "intelligence item 1" > "$TEST_TMPDIR/inbox/test-concern/pending/item1.txt"
+    echo "intelligence item 2" > "$TEST_TMPDIR/inbox/test-concern/pending/item2.txt"
 
-    # Both should be new
-    assert_exit_code 0 "item1 is new" manifest_is_new "$TEST_TMPDIR" "item1.txt"
-    assert_exit_code 0 "item2 is new" manifest_is_new "$TEST_TMPDIR" "item2.txt"
+    # Both should be new (concern-namespaced keys)
+    assert_exit_code 0 "item1 is new" manifest_is_new "$TEST_TMPDIR" "test-concern/item1.txt"
+    assert_exit_code 0 "item2 is new" manifest_is_new "$TEST_TMPDIR" "test-concern/item2.txt"
 
     # Process item1
-    inbox_process_item "$TEST_TMPDIR" "$TEST_TMPDIR/inbox/pending/item1.txt"
+    inbox_process_item "$TEST_TMPDIR" "$TEST_TMPDIR/inbox/test-concern/pending/item1.txt"
 
     # item1 should now be not-new (processed), item2 still new
-    assert_exit_code 1 "item1 is not new after processing" manifest_is_new "$TEST_TMPDIR" "item1.txt"
-    assert_exit_code 0 "item2 is still new" manifest_is_new "$TEST_TMPDIR" "item2.txt"
+    assert_exit_code 1 "item1 is not new after processing" manifest_is_new "$TEST_TMPDIR" "test-concern/item1.txt"
+    assert_exit_code 0 "item2 is still new" manifest_is_new "$TEST_TMPDIR" "test-concern/item2.txt"
 
     # Verify item1 moved to processed
-    assert_file_exists "$TEST_TMPDIR/inbox/processed/item1.txt" "item1 moved to processed"
+    assert_file_exists "$TEST_TMPDIR/inbox/test-concern/processed/item1.txt" "item1 moved to processed"
 
-    # Verify manifest has the entry
+    # Verify manifest has the entry with concern-namespaced key
     local manifest_status
-    manifest_status="$(jq -r '.files["item1.txt"].status' "$TEST_TMPDIR/inbox/.manifest.json")"
+    manifest_status="$(jq -r '.files["test-concern/item1.txt"].status' "$TEST_TMPDIR/inbox/.manifest.json")"
     assert_eq "processed" "$manifest_status" "manifest shows item1 as processed"
 
     # Test manifest stats

@@ -17,22 +17,40 @@ health_checks:
     expect: "output_matches"
     value: "^0$"
 
-sources:
-  - name: "ai-model-releases"
-    type: "rss"
-    schedule: "daily"
-    description: "New AI model announcements and capabilities"
-    url: ""
-  - name: "framework-changelog"
-    type: "command"
-    schedule: "weekly"
-    description: "Check for updates to the LLM CLI/SDK"
-    command: ""
-  - name: "prompt-research"
-    type: "rss"
-    schedule: "weekly"
-    description: "Prompt engineering techniques and research"
-    url: ""
+lens:
+  concerns:
+    - name: "model-landscape"
+      description: "New AI model releases, capability changes, deprecations"
+      feeds:
+        - type: "rss"
+          url: ""
+          schedule: "daily"
+          description: "AI model release announcements"
+      accepts_inbox: true
+      accepts_agents: true
+      research_on_arrival: true
+
+    - name: "prompt-quality"
+      description: "Prompt engineering techniques, best practices, regressions"
+      feeds:
+        - type: "rss"
+          url: ""
+          schedule: "weekly"
+          description: "Prompt engineering research"
+      accepts_inbox: true
+      accepts_agents: false
+      research_on_arrival: true
+
+    - name: "framework-changes"
+      description: "SDK updates, CLI changes, API deprecations"
+      feeds:
+        - type: "command"
+          command: ""
+          schedule: "weekly"
+          description: "LLM CLI/SDK version check"
+      accepts_inbox: true
+      accepts_agents: false
+      research_on_arrival: false
 
 gap_framework:
   - "prompt_quality"

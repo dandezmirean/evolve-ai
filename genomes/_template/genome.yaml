@@ -20,14 +20,34 @@ health_checks:
     command: ""
     expect: "exit_code_0"
 
-# sources: intelligence feeds that inform the strategize phase
-# Types: rss, command, file
-sources:
-  - name: ""
-    type: "command"
-    schedule: "daily"
-    description: ""
-    command: ""
+# lens: the perceptual layer — how this genome sees the outside world
+# Organized by concerns (what to watch for), not by data delivery mechanism.
+# Each concern can pull from multiple feeds, accept manual drops, and trigger research.
+#
+# Fields per concern:
+#   name (required)           — identifier, used for per-concern inbox directories
+#   description (required)    — what this concern watches for
+#   feeds (optional)          — array of automated data sources
+#     - type: "rss"|"command" — adapter type
+#       url: "..."            — for RSS feeds
+#       command: "..."        — for command feeds
+#       schedule: "daily"|"weekly"|"hourly"
+#       description: "..."    — what this feed provides
+#   accepts_inbox (default: true)  — whether humans can drop files into this concern
+#   accepts_agents (default: false) — whether external agents can push to this concern
+#   research_on_arrival (default: false) — whether new items trigger deep research
+lens:
+  concerns:
+    - name: ""
+      description: ""
+      feeds:
+        - type: "command"
+          command: ""
+          schedule: "daily"
+          description: ""
+      accepts_inbox: true
+      accepts_agents: false
+      research_on_arrival: false
 
 # gap_framework: dimensions the agent evaluates for improvement opportunities
 gap_framework:
