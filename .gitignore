@@ -1,7 +1,7 @@
 # Runtime
 *.lock
 workspace/
-memory/
+/memory/
 inbox/
 resume-context/
 directives/
