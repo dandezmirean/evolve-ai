@@ -202,9 +202,20 @@ memory_append_metric() {
         return 0
     fi
 
-    # Dedup check: skip if id already exists
-    if [[ -f "$metrics_file" ]] && grep -q "\"id\":\"${metric_id}\"" "$metrics_file" 2>/dev/null; then
-        return 0
+    # Dedup check: composite key id + run_date
+    local run_date
+    run_date="$(printf '%s' "$metric_json" | jq -r '.run_date // ""' 2>/dev/null)"
+
+    if [[ -n "$run_date" && -f "$metrics_file" ]]; then
+        # Check composite key: both id AND run_date must match
+        if grep -F "\"id\":\"${metric_id}\"" "$metrics_file" 2>/dev/null | grep -Fq "\"run_date\":\"${run_date}\"" 2>/dev/null; then
+            return 0
+        fi
+    elif [[ -z "$run_date" && -f "$metrics_file" ]]; then
+        # Fallback: if no run_date, dedup by id only
+        if grep -Fq "\"id\":\"${metric_id}\"" "$metrics_file" 2>/dev/null; then
+            return 0
+        fi
     fi
 
     printf '%s\n' "$metric_json" >> "$metrics_file"
