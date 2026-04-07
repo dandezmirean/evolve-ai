@@ -190,6 +190,73 @@ YAML
 }
 
 # ---------------------------------------------------------------------------
+# test_notification_config_init_format_roundtrip
+# ---------------------------------------------------------------------------
+test_notification_config_init_format_roundtrip() {
+    echo "test_notification_config_init_format_roundtrip"
+    setup_test_env
+
+    # This is exactly what evolve init generates for Telegram
+    local yaml="$TEST_TMPDIR/evolve.yaml"
+    cat > "$yaml" <<'YAML'
+version: "1.0.0"
+
+notifications:
+  - type: "telegram"
+    bot_token_env: "EVOLVE_TG_BOT_TOKEN"
+    chat_id_env: "EVOLVE_TG_CHAT_ID"
+  - type: "slack"
+    webhook_url_env: "EVOLVE_SLACK_WEBHOOK"
+  - type: "discord"
+    webhook_url_env: "EVOLVE_DISCORD_WEBHOOK"
+YAML
+
+    export EVOLVE_TG_BOT_TOKEN="tg-token-123"
+    export EVOLVE_TG_CHAT_ID="tg-chat-456"
+    export EVOLVE_SLACK_WEBHOOK="https://hooks.slack.com/services/xxx"
+    export EVOLVE_DISCORD_WEBHOOK="https://discord.com/api/webhooks/yyy"
+
+    load_notification_config "$yaml"
+
+    assert_eq 3 "${#_NOTIFICATION_ENTRIES[@]}" "parsed 3 init-format entries"
+    assert_eq "telegram|tg-token-123|tg-chat-456" "${_NOTIFICATION_ENTRIES[0]}" "telegram init format roundtrip"
+    assert_eq "slack|https://hooks.slack.com/services/xxx|" "${_NOTIFICATION_ENTRIES[1]}" "slack init format roundtrip"
+    assert_eq "discord|https://discord.com/api/webhooks/yyy|" "${_NOTIFICATION_ENTRIES[2]}" "discord init format roundtrip"
+
+    unset EVOLVE_TG_BOT_TOKEN EVOLVE_TG_CHAT_ID EVOLVE_SLACK_WEBHOOK EVOLVE_DISCORD_WEBHOOK
+    teardown_test_env
+}
+
+# ---------------------------------------------------------------------------
+# test_notification_config_missing_env_var
+# ---------------------------------------------------------------------------
+test_notification_config_missing_env_var() {
+    echo "test_notification_config_missing_env_var"
+    setup_test_env
+
+    local yaml="$TEST_TMPDIR/evolve.yaml"
+    cat > "$yaml" <<'YAML'
+version: "1.0.0"
+
+notifications:
+  - type: "telegram"
+    bot_token_env: "NONEXISTENT_VAR"
+    chat_id_env: "ALSO_NONEXISTENT"
+YAML
+
+    unset NONEXISTENT_VAR 2>/dev/null || true
+    unset ALSO_NONEXISTENT 2>/dev/null || true
+
+    load_notification_config "$yaml"
+
+    # Should parse the entry but with empty resolved values
+    assert_eq 1 "${#_NOTIFICATION_ENTRIES[@]}" "parsed 1 entry with missing env vars"
+    assert_eq "telegram||" "${_NOTIFICATION_ENTRIES[0]}" "missing env vars resolve to empty"
+
+    teardown_test_env
+}
+
+# ---------------------------------------------------------------------------
 # Run all tests
 # ---------------------------------------------------------------------------
 test_notify_stdout_outputs_with_timestamp
@@ -199,5 +266,7 @@ test_notify_no_crash_on_empty_entries
 test_load_notification_config_multiple_providers
 test_load_notification_config_notifications_at_end_of_file
 test_load_notification_config_env_vars
+test_notification_config_init_format_roundtrip
+test_notification_config_missing_env_var
 
 report_results
