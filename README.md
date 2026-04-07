@@ -20,7 +20,7 @@ evolve-ai is modeled after a living organism. Each component has a biological an
 
 **Lens** — The sensory organs. Each genome has a lens that defines how the organism perceives the outside world. A lens is organized by **concerns** — security posture, dependency health, resource drift — not by what protocol delivers the data. A single concern can see through multiple channels simultaneously: RSS feeds, shell commands, human file drops, agent pushes. The concern is the sense; the feed is just the nerve ending.
 
-**Pool** — The bloodstream. Every proposed change enters the pool and flows through the pipeline. The pool is a JSON state machine that tracks each proposal from birth (`pending`) through trial (`implemented`, `validated`) to fate (`landed`, `reverted`, or `killed`). Nothing happens outside the pool. Nothing is forgotten.
+**Pool** — The bloodstream. Every proposed change enters the pool and flows through the pipeline. The pool is a JSON state machine that tracks each proposal from birth (`pending`) through trial (`implemented`, `validated`) to fate (`landed`, `reverted`, or `killed`). Nothing happens outside the pool. Nothing is forgotten. Pool state is validated (jq) before each convergence loop iteration — malformed JSON halts the pipeline.
 
 **Challenge** — The immune system. Before any proposal touches the target system, it faces an adversarial review. The challenge phase operates in isolation — it cannot see the reasoning that created the proposal. It attacks with 7+ vectors: speculative benefit, blast radius, scope creep, resource feasibility, track record. Bad ideas are killed before they infect the host.
 
@@ -117,7 +117,7 @@ $ ./bin/evolve run --directed
 
 **It lets you re-enter any decision.** Every choice the pipeline makes produces a resume context. Disagree with something? Run `evolve resume <id>` and steer it interactively.
 
-**It measures actual impact.** Four-layer scoring — automated metrics, LLM evaluation, KPI baselines, and your own custom checks — means every change is measured before and after. Negative impact triggers automatic rollback.
+**It measures actual impact.** Four-layer scoring — automated metrics, LLM evaluation, KPI baselines, and your own custom checks — means every change is measured before and after. Negative impact triggers automatic rollback. Validation uses a 3-tier model: static checks, functional verification, and resource-gated intelligent adversarial review.
 
 **It improves itself.** A meta-agent (outer loop) evaluates the pipeline's own performance weekly and tunes prompts, scoring weights, and source credibility. The system that improves your systems also improves itself.
 
@@ -235,7 +235,7 @@ evolve-ai/
     memory/                   Persistent cross-run state (7 memory files)
     inbox/                    Per-concern inbox watcher + manifest tracking
     resume/                   Human re-entry context system
-    directives/               Persistent rules (lock, priority, constraint, override)
+    directives/               Persistent rules (lock, priority, constraint, override); lock files include timestamps for automatic stale detection (cleared after 2 hours)
     notifications/            Telegram, Slack, Discord, stdout
     providers/                LLM provider abstraction (Claude, OpenAI)
     meta/                     Outer loop evaluator
