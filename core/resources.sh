@@ -22,7 +22,7 @@ get_disk_usage_pct() {
 # Returns 0 if free RAM is at or above threshold, 1 if below.
 check_ram_gate() {
     local threshold
-    threshold="$(config_get_default "min_free_ram_mb" "1500")"
+    threshold="$(config_get_default "resources.min_free_ram_mb" "1500")"
 
     local free_mb
     free_mb="$(get_free_ram_mb)"
@@ -45,7 +45,7 @@ check_ram_gate() {
 # Returns 0 if disk usage is at or below threshold, 1 if above.
 check_disk_gate() {
     local threshold
-    threshold="$(config_get_default "max_disk_usage_pct" "85")"
+    threshold="$(config_get_default "resources.max_disk_usage_pct" "85")"
 
     local usage_pct
     usage_pct="$(get_disk_usage_pct)"
