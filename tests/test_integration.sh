@@ -21,18 +21,18 @@ test_init_cycle() {
     echo "test_init_cycle"
     setup_test_env
 
-    # Set up the pack template and packs that init depends on
-    mkdir -p "$TEST_TMPDIR/packs/_template"
-    cp "$PROJECT_ROOT/packs/_template/pack.yaml" "$TEST_TMPDIR/packs/_template/pack.yaml"
-    mkdir -p "$TEST_TMPDIR/packs/infrastructure"
-    cp "$PROJECT_ROOT/packs/infrastructure/pack.yaml" "$TEST_TMPDIR/packs/infrastructure/pack.yaml"
+    # Set up the genome template and genomes that init depends on
+    mkdir -p "$TEST_TMPDIR/genomes/_template"
+    cp "$PROJECT_ROOT/genomes/_template/genome.yaml" "$TEST_TMPDIR/genomes/_template/genome.yaml"
+    mkdir -p "$TEST_TMPDIR/genomes/infrastructure"
+    cp "$PROJECT_ROOT/genomes/infrastructure/genome.yaml" "$TEST_TMPDIR/genomes/infrastructure/genome.yaml"
     mkdir -p "$TEST_TMPDIR/core/memory/templates"
     cp "$PROJECT_ROOT/core/memory/templates/"* "$TEST_TMPDIR/core/memory/templates/"
 
     # Source init.sh with the test directory
     # We need to override _INIT_DIR so it finds templates in our test env
     source "$PROJECT_ROOT/core/config.sh"
-    source "$PROJECT_ROOT/core/packs/validator.sh"
+    source "$PROJECT_ROOT/core/genomes/validator.sh"
     source "$PROJECT_ROOT/core/init.sh"
     _INIT_DIR="$TEST_TMPDIR/core"
 
@@ -60,7 +60,7 @@ test_init_cycle() {
     # Verify config content
     local config_content
     config_content="$(cat "$TEST_TMPDIR/config/evolve.yaml")"
-    assert_contains "$config_content" "infrastructure" "config references infrastructure pack"
+    assert_contains "$config_content" "infrastructure" "config references infrastructure genome"
     assert_contains "$config_content" "claude-max" "config references claude-max provider"
 
     teardown_test_env
@@ -134,11 +134,11 @@ test_scoring_pipeline() {
     local workspace="$TEST_TMPDIR/workspace"
     mkdir -p "$workspace/scores"
 
-    # Create a mock pack.yaml with heuristic scorers that return known values
-    local pack_yaml="$TEST_TMPDIR/pack.yaml"
-    cat > "$pack_yaml" <<'PACKYAML'
-name: "test-pack"
-description: "Test pack for scoring"
+    # Create a mock genome.yaml with heuristic scorers that return known values
+    local genome_yaml="$TEST_TMPDIR/genome.yaml"
+    cat > "$genome_yaml" <<'PACKYAML'
+name: "test-genome"
+description: "Test genome for scoring"
 
 scorers:
   heuristic:
@@ -170,7 +170,7 @@ challenge_vectors:
 PACKYAML
 
     # Run heuristic scoring "before"
-    scoring_run_heuristic "$pack_yaml" "$workspace" "score-1" "before"
+    scoring_run_heuristic "$genome_yaml" "$workspace" "score-1" "before"
     assert_file_exists "$workspace/scores/score-1-heuristic-before.json" "before score file created"
 
     local before_value
@@ -178,9 +178,9 @@ PACKYAML
     assert_eq "50" "$before_value" "before heuristic value is 50"
 
     # Simulate an improvement: overwrite the scorer to return 80
-    cat > "$pack_yaml" <<'PACKYAML2'
-name: "test-pack"
-description: "Test pack for scoring"
+    cat > "$genome_yaml" <<'PACKYAML2'
+name: "test-genome"
+description: "Test genome for scoring"
 
 scorers:
   heuristic:
@@ -212,7 +212,7 @@ challenge_vectors:
 PACKYAML2
 
     # Run heuristic scoring "after"
-    scoring_run_heuristic "$pack_yaml" "$workspace" "score-1" "after"
+    scoring_run_heuristic "$genome_yaml" "$workspace" "score-1" "after"
     assert_file_exists "$workspace/scores/score-1-heuristic-after.json" "after score file created"
 
     local after_value
@@ -577,10 +577,10 @@ test_cli_commands() {
     assert_contains "$help_output" "run" "help lists run command"
     assert_contains "$help_output" "resume" "help lists resume command"
 
-    # Test pack list command
-    local packs_output
-    packs_output="$("$PROJECT_ROOT/bin/evolve" pack list 2>&1)"
-    assert_contains "$packs_output" "infrastructure" "pack list includes infrastructure"
+    # Test genome list command
+    local genomes_output
+    genomes_output="$("$PROJECT_ROOT/bin/evolve" genome list 2>&1)"
+    assert_contains "$genomes_output" "infrastructure" "genome list includes infrastructure"
 
     teardown_test_env
 }

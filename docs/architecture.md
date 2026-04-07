@@ -29,7 +29,7 @@ The meta-agent runs weekly. It reads accumulated metrics, evaluates pipeline hea
                     |                               |
                     |  CANNOT touch:                |
                     |    - Safety rules             |
-                    |    - Pack identity            |
+                    |    - Genome identity           |
                     |    - Circuit breaker          |
                     |    - Its own prompt           |
                     +-------------------------------+
@@ -163,7 +163,7 @@ The `max_iterations` setting (default: 10) provides a hard upper bound.
 | Resume Runner | `core/resume/resume-runner.sh` | Interactive resume session with 6 action types |
 | Directives | `core/directives/manager.sh` | CRUD for lock/priority/constraint/override directives |
 | Meta-Agent | `core/meta/meta-agent.sh` | Outer loop: 4 evaluation dimensions + proposals |
-| Packs | `core/packs/validator.sh` | Pack schema validation, loading, listing |
+| Genomes | `core/genomes/validator.sh` | Genome schema validation, loading, listing |
 
 ## How Phases Interact
 
@@ -211,7 +211,7 @@ version: "1.0.0"          # Config schema version
 created: "2026-04-06"     # Date of init
 
 targets:                   # What to evolve
-  - pack: "infrastructure" # Pack name (matches packs/ directory)
+  - genome: "infrastructure" # Genome name (matches genomes/ directory)
     root: "/home/user"     # Root directory of the target system
     weight: 1              # Relative priority weight
 

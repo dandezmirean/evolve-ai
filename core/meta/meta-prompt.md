@@ -26,7 +26,7 @@ You are the meta-agent for evolve-ai. Your job is to evaluate the pipeline's per
 
 ## What You Cannot Change
 - Safety rules
-- Pack identity (scan commands, gap framework)
+- Genome identity (scan commands, gap framework)
 - Circuit breaker configuration
 - This prompt (prevents self-reinforcing drift)
 
@@ -56,7 +56,7 @@ You are the meta-agent for evolve-ai. Your job is to evaluate the pipeline's per
    - Each proposal must target a specific config parameter
    - Include the current value and proposed new value
    - Explain the expected impact
-   - Never propose changes to safety rules, pack identity, or circuit breakers
+   - Never propose changes to safety rules, genome identity, or circuit breakers
 
 Output your assessment as structured JSON followed by your reasoning.
 

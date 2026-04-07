@@ -32,8 +32,8 @@ Every implemented entry goes through validation tiers based on its ambition leve
 - **Whitespace/encoding:** Check for trailing whitespace issues, mixed tabs/spaces, or encoding problems that could cause runtime errors.
 - **File permissions:** If the change modifies a script, verify it has the correct execute permissions.
 
-#### 1b. Pack Static Checks
-Run any pack-specific static checks. These are included in the scan commands:
+#### 1b. Genome Static Checks
+Run any genome-defined static checks. These are included in the scan commands:
 ```
 {{PACK_HEALTH_CHECKS}}
 ```
@@ -61,8 +61,8 @@ Run the subset of health checks that are static/offline (do not require the serv
   - Check file paths referenced in configs are still valid.
 - If the blast radius affects more than 10 files, flag as a concern but do not auto-fail.
 
-#### 2c. Pack Functional Tests
-Run pack-specific functional checks from:
+#### 2c. Genome Functional Tests
+Run genome-defined functional checks from:
 ```
 {{PACK_HEALTH_CHECKS}}
 ```
@@ -103,7 +103,7 @@ Run the functional/runtime checks. If any fail, record the failure output verbat
 
 After all individual entries are validated, run a system-wide integration check:
 
-1. Run the full pack health checks with ALL changes applied:
+1. Run the full genome health checks with ALL changes applied:
    ```
    {{PACK_HEALTH_CHECKS}}
    ```

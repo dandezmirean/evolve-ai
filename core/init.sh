@@ -6,7 +6,7 @@ _INIT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Source dependencies
 source "$_INIT_DIR/config.sh"
-source "$_INIT_DIR/packs/validator.sh"
+source "$_INIT_DIR/genomes/validator.sh"
 
 # ---------------------------------------------------------------------------
 # Ctrl+C handler — graceful exit during init
@@ -72,13 +72,13 @@ EOF
 }
 
 # ---------------------------------------------------------------------------
-# _select_packs <evolve_root>
-# Interactive pack selection. Sets SELECTED_PACKS (space-separated pack names)
-# and SELECTED_PACK_DIRS (space-separated pack directories).
+# _select_genomes <evolve_root>
+# Interactive genome selection. Sets SELECTED_GENOMES (space-separated names)
+# and SELECTED_GENOME_DIRS (space-separated genome directories).
 # ---------------------------------------------------------------------------
-_select_packs() {
+_select_genomes() {
     local evolve_root="$1"
-    local packs_dir="$evolve_root/packs"
+    local genomes_dir="$evolve_root/genomes"
 
     echo "What are you evolving? (select all that apply, or describe your own)"
     echo "  [1] Infrastructure (server, homelab, services)"
@@ -90,8 +90,8 @@ _select_packs() {
     local selection
     selection="$(_prompt "Selection (e.g. 1, 2 or +)" "1")"
 
-    SELECTED_PACKS=""
-    SELECTED_PACK_DIRS=""
+    SELECTED_GENOMES=""
+    SELECTED_GENOME_DIRS=""
 
     # Parse comma/space separated selection
     local items
@@ -101,16 +101,16 @@ _select_packs() {
         item="$(echo "$item" | tr -d ' ')"
         case "$item" in
             1)
-                SELECTED_PACKS="${SELECTED_PACKS:+$SELECTED_PACKS }infrastructure"
-                SELECTED_PACK_DIRS="${SELECTED_PACK_DIRS:+$SELECTED_PACK_DIRS }$packs_dir/infrastructure"
+                SELECTED_GENOMES="${SELECTED_GENOMES:+$SELECTED_GENOMES }infrastructure"
+                SELECTED_GENOME_DIRS="${SELECTED_GENOME_DIRS:+$SELECTED_GENOME_DIRS }$genomes_dir/infrastructure"
                 ;;
             2)
-                SELECTED_PACKS="${SELECTED_PACKS:+$SELECTED_PACKS }agent-harness"
-                SELECTED_PACK_DIRS="${SELECTED_PACK_DIRS:+$SELECTED_PACK_DIRS }$packs_dir/agent-harness"
+                SELECTED_GENOMES="${SELECTED_GENOMES:+$SELECTED_GENOMES }agent-harness"
+                SELECTED_GENOME_DIRS="${SELECTED_GENOME_DIRS:+$SELECTED_GENOME_DIRS }$genomes_dir/agent-harness"
                 ;;
             3)
-                SELECTED_PACKS="${SELECTED_PACKS:+$SELECTED_PACKS }codebase"
-                SELECTED_PACK_DIRS="${SELECTED_PACK_DIRS:+$SELECTED_PACK_DIRS }$packs_dir/codebase"
+                SELECTED_GENOMES="${SELECTED_GENOMES:+$SELECTED_GENOMES }codebase"
+                SELECTED_GENOME_DIRS="${SELECTED_GENOME_DIRS:+$SELECTED_GENOME_DIRS }$genomes_dir/codebase"
                 ;;
             +|+*)
                 echo ""
@@ -118,10 +118,10 @@ _select_packs() {
                 desc="$(_prompt "Describe what you want to evolve" "")"
                 if [[ -n "$desc" ]]; then
                     local custom_name
-                    custom_name="$(generate_custom_pack "$evolve_root" "$desc")"
+                    custom_name="$(generate_custom_genome "$evolve_root" "$desc")"
                     if [[ -n "$custom_name" ]]; then
-                        SELECTED_PACKS="${SELECTED_PACKS:+$SELECTED_PACKS }$custom_name"
-                        SELECTED_PACK_DIRS="${SELECTED_PACK_DIRS:+$SELECTED_PACK_DIRS }$packs_dir/$custom_name"
+                        SELECTED_GENOMES="${SELECTED_GENOMES:+$SELECTED_GENOMES }$custom_name"
+                        SELECTED_GENOME_DIRS="${SELECTED_GENOME_DIRS:+$SELECTED_GENOME_DIRS }$genomes_dir/$custom_name"
                     fi
                 fi
                 ;;
@@ -131,29 +131,29 @@ _select_packs() {
         esac
     done
 
-    if [[ -z "$SELECTED_PACKS" ]]; then
-        echo "No packs selected. Using infrastructure as default." >&2
-        SELECTED_PACKS="infrastructure"
-        SELECTED_PACK_DIRS="$packs_dir/infrastructure"
+    if [[ -z "$SELECTED_GENOMES" ]]; then
+        echo "No genomes selected. Using infrastructure as default." >&2
+        SELECTED_GENOMES="infrastructure"
+        SELECTED_GENOME_DIRS="$genomes_dir/infrastructure"
     fi
 
     echo ""
-    echo "Selected packs: $SELECTED_PACKS"
+    echo "Selected genomes: $SELECTED_GENOMES"
     echo ""
 }
 
 # ---------------------------------------------------------------------------
 # _select_target_roots
-# For each selected pack, ask for the target root directory.
-# Sets TARGET_ROOTS (space-separated paths, same order as SELECTED_PACKS).
+# For each selected genome, ask for the target root directory.
+# Sets TARGET_ROOTS (space-separated paths, same order as SELECTED_GENOMES).
 # ---------------------------------------------------------------------------
 _select_target_roots() {
     TARGET_ROOTS=""
-    local packs=($SELECTED_PACKS)
+    local genomes=($SELECTED_GENOMES)
 
-    for pack in "${packs[@]}"; do
+    for genome in "${genomes[@]}"; do
         local default_root
-        case "$pack" in
+        case "$genome" in
             infrastructure) default_root="$HOME" ;;
             agent-harness)  default_root="$HOME/agents" ;;
             codebase)       default_root="." ;;
@@ -161,7 +161,7 @@ _select_target_roots() {
         esac
 
         local root
-        root="$(_prompt "Target root directory for '$pack'" "$default_root")"
+        root="$(_prompt "Target root directory for '$genome'" "$default_root")"
         TARGET_ROOTS="${TARGET_ROOTS:+$TARGET_ROOTS }$root"
     done
     echo ""
@@ -249,35 +249,35 @@ _select_notifications() {
 
 # ---------------------------------------------------------------------------
 # _configure_sources
-# Show each pack's suggested sources, allow toggle.
+# Show each genome's suggested sources, allow toggle.
 # ---------------------------------------------------------------------------
 _configure_sources() {
     echo "--- Sensory Organs ---"
     echo ""
 
-    local packs=($SELECTED_PACKS)
-    local pack_dirs=($SELECTED_PACK_DIRS)
+    local genomes=($SELECTED_GENOMES)
+    local genome_dirs=($SELECTED_GENOME_DIRS)
 
-    for i in "${!packs[@]}"; do
-        local pack="${packs[$i]}"
-        local pack_dir="${pack_dirs[$i]}"
-        local pack_yaml="$pack_dir/pack.yaml"
+    for i in "${!genomes[@]}"; do
+        local genome="${genomes[$i]}"
+        local genome_dir="${genome_dirs[$i]}"
+        local genome_yaml="$genome_dir/genome.yaml"
 
-        if [[ ! -f "$pack_yaml" ]]; then
+        if [[ ! -f "$genome_yaml" ]]; then
             continue
         fi
 
-        echo "The $pack pack suggests these intelligence sources:"
-        # Extract source names from pack.yaml
-        grep -A1 '^\s*- name:' "$pack_yaml" 2>/dev/null | grep 'name:' | while read -r line; do
+        echo "The $genome genome defines these intelligence sources:"
+        # Extract source names from genome.yaml
+        grep -A1 '^\s*- name:' "$genome_yaml" 2>/dev/null | grep 'name:' | while read -r line; do
             local name
             name="$(echo "$line" | sed 's/.*name:[[:space:]]*//' | tr -d '"')"
             echo "  [x] $name"
         done
         echo ""
 
-        if ! _prompt_confirm "Accept default sources for $pack?"; then
-            echo "  (Source customization saved for post-init editing via 'evolve pack edit $pack')"
+        if ! _prompt_confirm "Accept default sources for $genome?"; then
+            echo "  (Source customization saved for post-init editing via 'evolve genome edit $genome')"
         fi
         echo ""
     done
@@ -310,25 +310,25 @@ _configure_resources() {
 
 # ---------------------------------------------------------------------------
 # _configure_safety
-# Show safety rules per pack, allow add/confirm.
+# Show safety rules per genome, allow add/confirm.
 # ---------------------------------------------------------------------------
 _configure_safety() {
     echo "--- Safety Review ---"
     echo ""
 
-    local packs=($SELECTED_PACKS)
-    local pack_dirs=($SELECTED_PACK_DIRS)
+    local genomes=($SELECTED_GENOMES)
+    local genome_dirs=($SELECTED_GENOME_DIRS)
 
-    for i in "${!packs[@]}"; do
-        local pack="${packs[$i]}"
-        local pack_dir="${pack_dirs[$i]}"
-        local pack_yaml="$pack_dir/pack.yaml"
+    for i in "${!genomes[@]}"; do
+        local genome="${genomes[$i]}"
+        local genome_dir="${genome_dirs[$i]}"
+        local genome_yaml="$genome_dir/genome.yaml"
 
-        if [[ ! -f "$pack_yaml" ]]; then
+        if [[ ! -f "$genome_yaml" ]]; then
             continue
         fi
 
-        echo "$pack safety rules:"
+        echo "$genome safety rules:"
         # Extract safety rules from the never section
         local in_never=0
         while IFS= read -r line; do
@@ -345,11 +345,11 @@ _configure_safety() {
                     in_never=0
                 fi
             fi
-        done < "$pack_yaml"
+        done < "$genome_yaml"
 
         echo ""
-        if ! _prompt_confirm "Accept safety rules for $pack?"; then
-            echo "  (Safety customization saved for post-init editing via 'evolve pack edit $pack')"
+        if ! _prompt_confirm "Accept safety rules for $genome?"; then
+            echo "  (Safety customization saved for post-init editing via 'evolve genome edit $genome')"
         fi
         echo ""
     done
@@ -395,15 +395,15 @@ generate_config() {
 
     mkdir -p "$evolve_root/config"
 
-    local packs=($SELECTED_PACKS)
+    local genomes=($SELECTED_GENOMES)
     local roots=($TARGET_ROOTS)
 
     # Build targets section
     local targets_yaml=""
-    for i in "${!packs[@]}"; do
-        local pack="${packs[$i]}"
+    for i in "${!genomes[@]}"; do
+        local genome="${genomes[$i]}"
         local root="${roots[$i]}"
-        targets_yaml="${targets_yaml}  - pack: \"$pack\"
+        targets_yaml="${targets_yaml}  - genome: \"$genome\"
     root: \"$root\"
     weight: 1
 "
@@ -523,48 +523,48 @@ init_inbox() {
 }
 
 # ---------------------------------------------------------------------------
-# generate_custom_pack <evolve_root> <description>
-# Takes a natural language description, generates a pack.yaml.
+# generate_custom_genome <evolve_root> <description>
+# Takes a natural language description, generates a genome.yaml.
 # Uses template-based fallback (LLM generation is not available during init
 # without a running provider).
-# Returns the pack name.
+# Returns the genome name.
 # ---------------------------------------------------------------------------
-generate_custom_pack() {
+generate_custom_genome() {
     local evolve_root="$1"
     local description="$2"
 
     # Generate a slug name from the description
-    local pack_name
-    pack_name="$(echo "$description" | tr '[:upper:]' '[:lower:]' | tr -cs '[:alnum:]' '-' | sed 's/^-//;s/-$//' | head -c 30)"
+    local genome_name
+    genome_name="$(echo "$description" | tr '[:upper:]' '[:lower:]' | tr -cs '[:alnum:]' '-' | sed 's/^-//;s/-$//' | head -c 30)"
 
-    if [[ -z "$pack_name" ]]; then
-        pack_name="custom"
+    if [[ -z "$genome_name" ]]; then
+        genome_name="custom"
     fi
 
-    local pack_dir="$evolve_root/packs/$pack_name"
-    local template_dir="$evolve_root/packs/_template"
+    local genome_dir="$evolve_root/genomes/$genome_name"
+    local template_dir="$evolve_root/genomes/_template"
 
-    if [[ -d "$pack_dir" ]]; then
-        echo "  Pack '$pack_name' already exists. Using existing pack." >&2
-        printf '%s' "$pack_name"
+    if [[ -d "$genome_dir" ]]; then
+        echo "  Genome '$genome_name' already exists. Using existing genome." >&2
+        printf '%s' "$genome_name"
         return 0
     fi
 
     # Copy template
-    mkdir -p "$pack_dir"
-    cp "$template_dir/pack.yaml" "$pack_dir/pack.yaml"
+    mkdir -p "$genome_dir"
+    cp "$template_dir/genome.yaml" "$genome_dir/genome.yaml"
 
     # Fill in name and description
-    sed -i "s/^name: .*/name: \"$pack_name\"/" "$pack_dir/pack.yaml"
-    sed -i "s/^description: .*/description: \"$description\"/" "$pack_dir/pack.yaml"
+    sed -i "s/^name: .*/name: \"$genome_name\"/" "$genome_dir/genome.yaml"
+    sed -i "s/^description: .*/description: \"$description\"/" "$genome_dir/genome.yaml"
 
     echo "" >&2
-    echo "  Custom pack '$pack_name' created at $pack_dir" >&2
-    echo "  Edit pack.yaml to customize scan commands, health checks, sources, etc." >&2
-    echo "  Or use 'evolve pack edit $pack_name' after init." >&2
+    echo "  Custom genome '$genome_name' created at $genome_dir" >&2
+    echo "  Edit genome.yaml to customize scan commands, health checks, sources, etc." >&2
+    echo "  Or use 'evolve genome edit $genome_name' after init." >&2
     echo "" >&2
 
-    printf '%s' "$pack_name"
+    printf '%s' "$genome_name"
 }
 
 # ---------------------------------------------------------------------------
@@ -581,8 +581,8 @@ run_init() {
     echo "Welcome to evolve-ai."
     echo ""
 
-    # 1. Select packs
-    _select_packs "$evolve_root"
+    # 1. Select genomes
+    _select_genomes "$evolve_root"
 
     # 2. Select target root directories
     _select_target_roots
@@ -625,11 +625,11 @@ run_init() {
     echo "evolve-ai is ready."
     echo ""
     echo "  Commands:"
-    echo "    evolve run          Trigger a manual run now"
-    echo "    evolve status       View current state"
-    echo "    evolve history      View change history"
-    echo "    evolve pack edit    Modify pack configuration"
-    echo "    evolve pack create  Create a new pack conversationally"
+    echo "    evolve run            Trigger a manual run now"
+    echo "    evolve status         View current state"
+    echo "    evolve history        View change history"
+    echo "    evolve genome edit    Modify genome configuration"
+    echo "    evolve genome create  Create a new genome conversationally"
     echo ""
     echo "  Drop intelligence files into ./inbox/ or wait for"
     echo "  sources to populate."

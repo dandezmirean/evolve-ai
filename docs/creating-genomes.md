@@ -1,14 +1,14 @@
-# Creating Target Packs
+# Creating Genomes
 
-A target pack tells evolve-ai what system it is evolving and how to interact with it. This guide covers the pack manifest schema, creating packs from scratch, and using conversational generation.
+A genome tells evolve-ai what system it is evolving and how to interact with it. This guide covers the genome manifest schema, creating genomes from scratch, and using conversational generation.
 
-## Pack Manifest Schema
+## Genome Manifest Schema
 
-Every pack is a directory under `packs/` containing a `pack.yaml` file. Here is the complete schema with all fields explained:
+Every genome is a directory under `genomes/` containing a `genome.yaml` file. Here is the complete schema with all fields explained:
 
 ### name (required)
 
-Short identifier for the pack. Lowercase, hyphens allowed.
+Short identifier for the genome. Lowercase, hyphens allowed.
 
 ```yaml
 name: "my-homelab"
@@ -16,7 +16,7 @@ name: "my-homelab"
 
 ### description (required)
 
-One-line summary of what this pack evolves.
+One-line summary of what this genome evolves.
 
 ```yaml
 description: "Evolve a Proxmox-based homelab with 5 VMs and a NAS"
@@ -187,7 +187,7 @@ reversibility:
 
 ### commit_categories (required)
 
-Allowed category tags for changes from this pack. Used for metrics tracking and strategic analysis.
+Allowed category tags for changes from this genome. Used for metrics tracking and strategic analysis.
 
 ```yaml
 commit_categories:
@@ -209,60 +209,60 @@ challenge_vectors:
   - "Is this change idempotent? What if it runs twice?"
 ```
 
-## Walkthrough: Creating a Pack From Scratch
+## Walkthrough: Creating a Genome From Scratch
 
 ### 1. Copy the template
 
 ```bash
-cp -r packs/_template packs/my-target
+cp -r genomes/_template genomes/my-target
 ```
 
-### 2. Edit pack.yaml
+### 2. Edit genome.yaml
 
-Open `packs/my-target/pack.yaml` and fill in every field:
+Open `genomes/my-target/genome.yaml` and fill in every field:
 
 ```bash
-$EDITOR packs/my-target/pack.yaml
+$EDITOR genomes/my-target/genome.yaml
 ```
 
 Start with `name` and `description`, then work through each section. The template file contains comments explaining every field.
 
 ### 3. Add custom scorers (optional)
 
-If your heuristic scorers need helper scripts, place them in `packs/my-target/scorers/`:
+If your heuristic scorers need helper scripts, place them in `genomes/my-target/scorers/`:
 
 ```bash
-# packs/my-target/scorers/check-response-time.sh
+# genomes/my-target/scorers/check-response-time.sh
 #!/usr/bin/env bash
 curl -so /dev/null -w '%{time_total}' http://localhost:8080/health | awk '{printf "%.0f", $1 * 1000}'
 ```
 
-Then reference them in your pack.yaml:
+Then reference them in your genome.yaml:
 
 ```yaml
 scorers:
   heuristic:
     - name: "response_time_ms"
-      command: "bash packs/my-target/scorers/check-response-time.sh"
+      command: "bash genomes/my-target/scorers/check-response-time.sh"
       weight: 2
       direction: "lower_is_better"
 ```
 
-### 4. Validate the pack
+### 4. Validate the genome
 
 ```bash
-./bin/evolve pack list
+./bin/evolve genome list
 ```
 
-If your pack appears in the list, it passed validation. If not, check for missing required fields.
+If your genome appears in the list, it passed validation. If not, check for missing required fields.
 
 ### 5. Add to your config
 
-Edit `config/evolve.yaml` and add your pack to the targets list:
+Edit `config/evolve.yaml` and add your genome to the targets list:
 
 ```yaml
 targets:
-  - pack: "my-target"
+  - genome: "my-target"
     root: "/path/to/target/system"
     weight: 1
 ```
@@ -271,7 +271,7 @@ Or re-run `evolve init` to reconfigure.
 
 ## Walkthrough: Using Conversational Generation
 
-If you prefer not to write YAML manually, evolve-ai can generate a pack from a plain-language description.
+If you prefer not to write YAML manually, evolve-ai can generate a genome from a plain-language description.
 
 ### During init
 
@@ -288,19 +288,19 @@ Selection: +
 Describe what you want to evolve: A Python Flask API with PostgreSQL database, deployed on AWS ECS
 ```
 
-evolve-ai generates a pack named from your description (e.g., `python-flask-api-with-postgresql`) using the template and filling in name and description fields. You then customize the remaining fields post-init.
+evolve-ai generates a genome named from your description (e.g., `python-flask-api-with-postgresql`) using the template and filling in name and description fields. You then customize the remaining fields post-init.
 
 ### Standalone creation
 
 ```bash
-./bin/evolve pack create "my Kubernetes cluster with Helm charts"
+./bin/evolve genome create "my Kubernetes cluster with Helm charts"
 ```
 
-This creates the pack directory with a pre-filled pack.yaml that you can refine.
+This creates the genome directory with a pre-filled genome.yaml that you can refine.
 
-## Built-in Packs as Reference
+## Built-in Genomes as Reference
 
-The three built-in packs are good references for different target types:
+The three built-in genomes are good references for different target types:
 
 ### infrastructure
 
@@ -326,18 +326,18 @@ The three built-in packs are good references for different target types:
 - Safety: no force pushes, no credential commits
 - Challenge vectors: test coverage impact, API compatibility, dependency risks
 
-## Testing Your Pack
+## Testing Your Genome
 
-After creating a pack, verify it works:
+After creating a genome, verify it works:
 
 1. **Validate schema:**
    ```bash
-   ./bin/evolve pack list
+   ./bin/evolve genome list
    ```
-   Your pack should appear with its name and description.
+   Your genome should appear with its name and description.
 
 2. **Test scan commands manually:**
-   Run each scan command from your pack.yaml to verify they produce output and do not error.
+   Run each scan command from your genome.yaml to verify they produce output and do not error.
 
 3. **Test health checks manually:**
    Run each health check command and verify the expected behavior (exit code 0 or output matching the regex).
@@ -346,8 +346,8 @@ After creating a pack, verify it works:
    Run each scorer command and verify it outputs a single number.
 
 5. **Dry run:**
-   Configure the pack in evolve.yaml and run:
+   Configure the genome in evolve.yaml and run:
    ```bash
    ./bin/evolve run
    ```
-   Monitor the output for phase errors related to your pack configuration.
+   Monitor the output for phase errors related to your genome configuration.

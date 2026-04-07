@@ -6,7 +6,7 @@ evolve-ai uses a four-layer scoring system to measure the impact of every change
 
 The four scoring layers, in order of evaluation:
 
-1. **Heuristic** -- pack-defined commands that output numeric metrics
+1. **Heuristic** -- genome-defined commands that output numeric metrics
 2. **LLM Judge** -- an LLM evaluates the change diff and assigns a 0.0-1.0 score
 3. **KPI Baselines** -- before/after comparison of key performance indicators
 4. **User-Defined** -- additional custom scorers with the same format as heuristic
@@ -30,7 +30,7 @@ Impact signals feed into:
 
 ## Layer 1: Heuristic Scorers
 
-Heuristic scorers are shell commands defined in your pack's `pack.yaml` that output a single number to stdout. They run **before** and **after** a change, and the weighted delta determines the heuristic component of the impact signal.
+Heuristic scorers are shell commands defined in your genome's `genome.yaml` that output a single number to stdout. They run **before** and **after** a change, and the weighted delta determines the heuristic component of the impact signal.
 
 ### Configuration
 
@@ -114,7 +114,7 @@ scorers:
 
 ## Layer 3: KPI Baselines
 
-KPI checks compare specific metrics against baseline values with a threshold. They are defined per-pool-entry (not in the pack) because each change targets different KPIs.
+KPI checks compare specific metrics against baseline values with a threshold. They are defined per-pool-entry (not in the genome) because each change targets different KPIs.
 
 ### How KPIs Are Set
 
@@ -157,7 +157,7 @@ During the analyze phase, each pool entry can include a `kpi_checks` array:
 
 ## Layer 4: User-Defined Scorers
 
-User-defined scorers follow the exact same format as heuristic scorers but live in a separate section. They exist for scorers that are not part of the pack's core health metrics but are relevant for specific evaluation scenarios.
+User-defined scorers follow the exact same format as heuristic scorers but live in a separate section. They exist for scorers that are not part of the genome's core health metrics but are relevant for specific evaluation scenarios.
 
 ### Configuration
 
@@ -294,7 +294,7 @@ scorers:
       direction: "higher_is_better"
 ```
 
-KPI baselines are set per-entry during the analyze phase, not in pack configuration.
+KPI baselines are set per-entry during the analyze phase, not in genome configuration.
 
 ### No Scoring
 

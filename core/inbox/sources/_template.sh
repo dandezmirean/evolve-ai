@@ -4,7 +4,7 @@
 # To create a custom source adapter:
 # 1. Copy this file to core/inbox/sources/my-source.sh
 # 2. Implement the source_MYTYPE_fetch function
-# 3. Reference it in your pack.yaml under sources:
+# 3. Reference it in your genome.yaml under sources:
 #      - name: "my-source"
 #        type: "my-source"
 #        schedule: "daily"

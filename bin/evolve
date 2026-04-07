@@ -27,9 +27,9 @@ Commands:
   status                Show pool stats, lock status, and next scheduled run
   history               Print the changelog
   resume                Resume an interrupted pipeline run (Plan 6)
-  pack list             List available packs
-  pack edit <name>      Edit a pack
-  pack create <name>    Create a new pack
+  genome list           List available genomes
+  genome edit <name>    Edit a genome
+  genome create <name>  Create a new genome
   meta run              Run the meta-improvement pipeline
   meta status           Show meta pipeline status
   config                Show current configuration
@@ -177,15 +177,15 @@ main() {
         resume)
             cmd_resume "${1:-}"
             ;;
-        pack)
+        genome)
             local sub="${1:-}"
             shift || true
             case "$sub" in
                 list)
-                    source "$EVOLVE_ROOT/core/packs/validator.sh"
-                    list_packs "$EVOLVE_ROOT/packs"
+                    source "$EVOLVE_ROOT/core/genomes/validator.sh"
+                    list_genomes "$EVOLVE_ROOT/genomes"
                     ;;
-                edit)   echo "evolve pack edit: not yet implemented" ;;
+                edit)   echo "evolve genome edit: not yet implemented" ;;
                 create)
                     source "$EVOLVE_ROOT/core/init.sh"
                     local desc="${1:-}"
@@ -193,9 +193,9 @@ main() {
                         printf 'Describe what you want to evolve: '
                         read -r desc
                     fi
-                    generate_custom_pack "$EVOLVE_ROOT" "$desc"
+                    generate_custom_genome "$EVOLVE_ROOT" "$desc"
                     ;;
-                *)      echo "Unknown pack subcommand: $sub" >&2; usage; exit 1 ;;
+                *)      echo "Unknown genome subcommand: $sub" >&2; usage; exit 1 ;;
             esac
             ;;
         meta)

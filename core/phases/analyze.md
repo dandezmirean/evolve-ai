@@ -87,7 +87,7 @@ Gather context for observation-based proposals:
 
 ## Step 4 — Observation Scan
 
-Using the pack's observation types:
+Using the genome's observation types:
 ```
 {{PACK_OBSERVATION_TYPES}}
 ```
@@ -119,11 +119,11 @@ For each quick win, create:
   "source": "observation",
   "ambition": <1-3>,
   "effort": "<trivial|small|medium>",
-  "category": "<from pack categories>",
+  "category": "<from genome categories>",
   "why": "<what problem this solves>",
   "expected_benefit": "<specific improvement>",
   "files_affected": ["<file1>", "<file2>"],
-  "observation_type": "<from pack observation types>",
+  "observation_type": "<from genome observation types>",
   "history": [{"timestamp": "<ISO-8601>", "event": "proposed", "detail": "Analyze phase — observation scan"}]
 }
 ```

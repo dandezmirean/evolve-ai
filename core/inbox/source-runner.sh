@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # core/inbox/source-runner.sh — Source runner for evolve-ai
-# Reads pack source configuration and runs the appropriate adapters.
+# Reads genome source configuration and runs the appropriate adapters.
 
 SCRIPT_DIR_RUNNER="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -72,8 +72,8 @@ source_mark_run() {
 }
 
 # ---------------------------------------------------------------------------
-# run_sources <evolve_root> <pack_yaml>
-# Reads sources from pack.yaml, for each source:
+# run_sources <evolve_root> <genome_yaml>
+# Reads sources from genome.yaml, for each source:
 #   1. Determine adapter type (rss, command, webhook, manual)
 #   2. Check schedule against last run time
 #   3. Call the adapter's fetch/run function with the source config
@@ -81,17 +81,17 @@ source_mark_run() {
 # ---------------------------------------------------------------------------
 run_sources() {
     local evolve_root="$1"
-    local pack_yaml="$2"
+    local genome_yaml="$2"
 
-    if [[ ! -f "$pack_yaml" ]]; then
-        echo "[source-runner] Pack file not found: $pack_yaml" >&2
+    if [[ ! -f "$genome_yaml" ]]; then
+        echo "[source-runner] Genome file not found: $genome_yaml" >&2
         return 1
     fi
 
     local output_dir="$evolve_root/inbox/pending"
     mkdir -p "$output_dir"
 
-    # Parse sources from pack.yaml using awk
+    # Parse sources from genome.yaml using awk
     # We need: name, type, schedule, url (for RSS), command (for command), watch_dir (for manual)
     local in_sources=0
     local in_source=0
@@ -156,7 +156,7 @@ run_sources() {
                 source_watch_dir="$(echo "$line" | sed 's/.*watch_dir:[[:space:]]*//' | tr -d '"')"
             fi
         fi
-    done < "$pack_yaml"
+    done < "$genome_yaml"
 
     # Process final source
     if [[ "$in_sources" -eq 1 && -n "$source_name" ]]; then
@@ -166,7 +166,7 @@ run_sources() {
         (( sources_count++ )) || true
     fi
 
-    echo "[source-runner] Processed $sources_count source(s) from $pack_yaml"
+    echo "[source-runner] Processed $sources_count source(s) from $genome_yaml"
 }
 
 # ---------------------------------------------------------------------------

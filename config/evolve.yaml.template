@@ -2,7 +2,7 @@
 version: "1.0.0"
 
 targets:
-  - pack: "infrastructure"
+  - genome: "infrastructure"
     root: "."
     weight: 1
 

@@ -5,9 +5,9 @@
 ### Added
 - Core framework: orchestrator, pool state machine, config parser, lock management
 - 8-phase pipeline prompt templates (digest, strategize, analyze, challenge, implement, validate, finalize, metrics)
-- Three built-in target packs: infrastructure, agent-harness, codebase
-- Pack template for creating custom packs
-- Interactive `evolve init` with conversational pack generation
+- Three built-in genomes: infrastructure, agent-harness, codebase
+- Genome template for creating custom genomes
+- Interactive `evolve init` with conversational genome generation
 - Four-layer scoring engine (heuristic, LLM-judge, KPI baselines, user-defined)
 - Memory manager with 7 memory file types and changelog pruning
 - Metrics recorder with 17-field entries and weekly digest
@@ -23,7 +23,7 @@
 - Reversibility-first model requiring undo registration before execution
 - Convergence detection via pool status hashing and stall counting
 - Housekeeping: workspace retention, git tag pruning, pre-run snapshots
-- CLI with 13 commands: init, run, status, history, resume, pack, meta, config, version
+- CLI with 13 commands: init, run, status, history, resume, genome, meta, config, version
 - Comprehensive test suite (218 tests across 12 test files)
 - Integration test validating end-to-end component interaction
-- Full documentation: README, getting started, architecture, packs, scoring, safety model
+- Full documentation: README, getting started, architecture, genomes, scoring, safety model

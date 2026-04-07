@@ -41,7 +41,7 @@ Run the init wizard:
 
 The wizard guides you through 9 configuration steps:
 
-### Step 1: Select Packs
+### Step 1: Select Genomes
 
 ```
 What are you evolving? (select all that apply, or describe your own)
@@ -51,13 +51,13 @@ What are you evolving? (select all that apply, or describe your own)
   [+] Describe something else...
 ```
 
-Pick a number, or choose `+` to describe your target in plain language. evolve-ai will generate a custom pack from your description using the pack template.
+Pick a number, or choose `+` to describe your target in plain language. evolve-ai will generate a custom genome from your description using the genome template.
 
-You can select multiple packs by comma-separating: `1,3` for both infrastructure and codebase.
+You can select multiple genomes by comma-separating: `1,3` for both infrastructure and codebase.
 
 ### Step 2: Target Root Directories
 
-For each selected pack, specify the root directory of the system being evolved. For infrastructure this defaults to `$HOME`; for codebase it defaults to `.` (current directory).
+For each selected genome, specify the root directory of the system being evolved. For infrastructure this defaults to `$HOME`; for codebase it defaults to `.` (current directory).
 
 ### Step 3: LLM Provider
 
@@ -78,7 +78,7 @@ Where should results be sent?
 
 ### Step 5: Intelligence Sources
 
-Each pack comes with suggested intelligence sources (RSS feeds, log scanners, etc.). Accept the defaults or defer customization to post-init editing.
+Each genome comes with suggested intelligence sources (RSS feeds, log scanners, etc.). Accept the defaults or defer customization to post-init editing.
 
 ### Step 6: Resource Constraints
 
@@ -88,7 +88,7 @@ evolve-ai detects your system's RAM and disk. You set thresholds:
 
 ### Step 7: Safety Rules
 
-Each pack defines safety rules (things the pipeline must never do). Review and accept them, or defer customization.
+Each genome defines safety rules (things the pipeline must never do). Review and accept them, or defer customization.
 
 ### Step 8: Schedule
 
@@ -220,7 +220,7 @@ Intelligence sources feed the pipeline with signals about what to improve. There
 
 ### RSS Feeds
 
-Add security advisories, release feeds, or news sources to your pack's `sources.yaml`:
+Add security advisories, release feeds, or news sources to your genome's `sources.yaml`:
 
 ```yaml
 sources:
@@ -259,12 +259,12 @@ The inbox watcher picks these up and triggers a directed run.
 The webhook adapter listens for HTTP POST requests. Start it separately:
 
 ```bash
-# Configure in your pack's sources.yaml, then start the listener
+# Configure in your genome's sources.yaml, then start the listener
 ```
 
 ## Customizing Safety Rules
 
-Safety rules live in each pack's `pack.yaml` under `safety_rules`:
+Safety rules live in each genome's `genome.yaml` under `safety_rules`:
 
 ```yaml
 safety_rules:
@@ -284,6 +284,6 @@ You can also create runtime directives that add temporary safety constraints. Se
 ## Next Steps
 
 - [Architecture](architecture.md) -- understand the two-loop design and phase interactions
-- [Creating Packs](creating-packs.md) -- build a custom target pack
+- [Creating Genomes](creating-genomes.md) -- build a custom genome
 - [Scoring Guide](scoring-guide.md) -- configure how changes are measured
 - [Safety Model](safety-model.md) -- understand safety rules, directives, and circuit breaker

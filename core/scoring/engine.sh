@@ -11,12 +11,12 @@ if ! declare -f load_config >/dev/null 2>&1; then
 fi
 
 # ---------------------------------------------------------------------------
-# scoring_run_heuristic <pack_yaml> <workspace> <change_id> <before_or_after>
-# Runs all heuristic scorers defined in the pack and records results.
+# scoring_run_heuristic <genome_yaml> <workspace> <change_id> <before_or_after>
+# Runs all heuristic scorers defined in the genome and records results.
 # Saves to $workspace/scores/$change_id-heuristic-{before,after}.json
 # ---------------------------------------------------------------------------
 scoring_run_heuristic() {
-    local pack_yaml="$1"
+    local genome_yaml="$1"
     local workspace="$2"
     local change_id="$3"
     local before_or_after="$4"
@@ -24,14 +24,14 @@ scoring_run_heuristic() {
     mkdir -p "$workspace/scores"
     local out_file="$workspace/scores/${change_id}-heuristic-${before_or_after}.json"
 
-    # Extract heuristic scorers from pack YAML
+    # Extract heuristic scorers from genome YAML
     # Format: scorers.heuristic[] entries with name, command, weight, direction
     local scorers_json="[]"
 
-    if [[ -f "$pack_yaml" ]]; then
+    if [[ -f "$genome_yaml" ]]; then
         # Parse heuristic scorer blocks from YAML
         # Each scorer is a block under scorers.heuristic with name, command, weight, direction
-        scorers_json="$(_parse_scorer_list "$pack_yaml" "heuristic")"
+        scorers_json="$(_parse_scorer_list "$genome_yaml" "heuristic")"
     fi
 
     local count
@@ -76,12 +76,12 @@ scoring_run_heuristic() {
 }
 
 # ---------------------------------------------------------------------------
-# scoring_run_llm_judge <pack_yaml> <workspace> <change_id> <diff_file>
+# scoring_run_llm_judge <genome_yaml> <workspace> <change_id> <diff_file>
 # Invokes provider with judge prompt + diff. Saves LLM judge result.
 # Defaults to 0.5 (neutral) if provider unavailable.
 # ---------------------------------------------------------------------------
 scoring_run_llm_judge() {
-    local pack_yaml="$1"
+    local genome_yaml="$1"
     local workspace="$2"
     local change_id="$3"
     local diff_file="$4"
@@ -89,11 +89,11 @@ scoring_run_llm_judge() {
     mkdir -p "$workspace/scores"
     local out_file="$workspace/scores/${change_id}-llm-judge.json"
 
-    # Check if llm_judge is enabled in pack
+    # Check if llm_judge is enabled in genome
     local llm_enabled="false"
-    if [[ -f "$pack_yaml" ]]; then
+    if [[ -f "$genome_yaml" ]]; then
         local saved_cache="$_CONFIG_CACHE"
-        load_config "$pack_yaml"
+        load_config "$genome_yaml"
         llm_enabled="$(config_get_default "llm_judge.enabled" "false")"
         _CONFIG_CACHE="$saved_cache"
     fi
@@ -228,12 +228,12 @@ scoring_run_kpi() {
 }
 
 # ---------------------------------------------------------------------------
-# scoring_run_user_defined <pack_yaml> <workspace> <change_id> <before_or_after>
+# scoring_run_user_defined <genome_yaml> <workspace> <change_id> <before_or_after>
 # Same pattern as heuristic but reads from scorers.user_defined[].
 # Saves to $workspace/scores/$change_id-user-{before,after}.json
 # ---------------------------------------------------------------------------
 scoring_run_user_defined() {
-    local pack_yaml="$1"
+    local genome_yaml="$1"
     local workspace="$2"
     local change_id="$3"
     local before_or_after="$4"
@@ -243,8 +243,8 @@ scoring_run_user_defined() {
 
     local scorers_json="[]"
 
-    if [[ -f "$pack_yaml" ]]; then
-        scorers_json="$(_parse_scorer_list "$pack_yaml" "user_defined")"
+    if [[ -f "$genome_yaml" ]]; then
+        scorers_json="$(_parse_scorer_list "$genome_yaml" "user_defined")"
     fi
 
     local count
@@ -462,13 +462,13 @@ scoring_aggregate() {
 }
 
 # ---------------------------------------------------------------------------
-# _parse_scorer_list <pack_yaml> <scorer_type>
+# _parse_scorer_list <genome_yaml> <scorer_type>
 # Parses a YAML file to extract scorer definitions from scorers.<type>[].
 # Outputs a JSON array of {name, command, weight, direction}.
 # This is a simplified YAML list parser for our specific format.
 # ---------------------------------------------------------------------------
 _parse_scorer_list() {
-    local pack_yaml="$1"
+    local genome_yaml="$1"
     local scorer_type="$2"
 
     # Parse YAML scorer blocks manually
@@ -537,5 +537,5 @@ _parse_scorer_list() {
         flush_item()
         printf "]"
     }
-    ' "$pack_yaml"
+    ' "$genome_yaml"
 }

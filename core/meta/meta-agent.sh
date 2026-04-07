@@ -351,7 +351,7 @@ meta_evaluate_strategic_drift() {
 #
 # The meta-agent CAN change:
 #   - Phase turn budgets (in evolve.yaml)
-#   - Scoring weights (in pack config)
+#   - Scoring weights (in genome config)
 #   - Source schedules and priorities
 #   - Challenge approval floor percentage
 #   - Validation tier thresholds
@@ -359,7 +359,7 @@ meta_evaluate_strategic_drift() {
 #
 # The meta-agent CANNOT change:
 #   - Safety rules
-#   - Pack identity (scan commands, gap framework)
+#   - Genome identity (scan commands, gap framework)
 #   - Circuit breaker configuration
 #   - Its own evaluation prompt
 #

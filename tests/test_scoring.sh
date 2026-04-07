@@ -20,11 +20,11 @@ test_scoring_run_heuristic() {
     local workspace="$TEST_TMPDIR/workspace"
     mkdir -p "$workspace"
 
-    # Create a pack.yaml with a heuristic scorer that echoes a number
-    local pack_yaml="$TEST_TMPDIR/pack.yaml"
-    cat > "$pack_yaml" << 'YAML'
-name: test-pack
-description: test pack
+    # Create a genome.yaml with a heuristic scorer that echoes a number
+    local genome_yaml="$TEST_TMPDIR/genome.yaml"
+    cat > "$genome_yaml" << 'YAML'
+name: test-genome
+description: test genome
 scorers:
   heuristic:
     - name: "line_count"
@@ -37,7 +37,7 @@ scorers:
       direction: "lower_is_better"
 YAML
 
-    scoring_run_heuristic "$pack_yaml" "$workspace" "chg1" "before"
+    scoring_run_heuristic "$genome_yaml" "$workspace" "chg1" "before"
 
     local out_file="$workspace/scores/chg1-heuristic-before.json"
     assert_file_exists "$out_file" "heuristic before file created"

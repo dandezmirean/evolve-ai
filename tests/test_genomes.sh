@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# tests/test_packs.sh — tests for core/packs/validator.sh and core/init.sh
+# tests/test_genomes.sh — tests for core/genomes/validator.sh and core/init.sh
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -7,7 +7,7 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 EVOLVE_ROOT="$PROJECT_ROOT"
 
 source "$SCRIPT_DIR/helpers.sh"
-source "$PROJECT_ROOT/core/packs/validator.sh"
+source "$PROJECT_ROOT/core/genomes/validator.sh"
 source "$PROJECT_ROOT/core/init.sh"
 
 # Helper: assert exit code without set -e interference
@@ -31,93 +31,93 @@ _assert_exit() {
 }
 
 # ---------------------------------------------------------------------------
-# test_validate_pack_valid
-# validate_pack returns 0 for a valid pack (infrastructure)
+# test_validate_genome_valid
+# validate_genome returns 0 for a valid genome (infrastructure)
 # ---------------------------------------------------------------------------
-test_validate_pack_valid() {
-    echo "test_validate_pack_valid"
+test_validate_genome_valid() {
+    echo "test_validate_genome_valid"
 
-    _assert_exit 0 "infrastructure pack is valid" \
-        validate_pack "$PROJECT_ROOT/packs/infrastructure"
+    _assert_exit 0 "infrastructure genome is valid" \
+        validate_genome "$PROJECT_ROOT/genomes/infrastructure"
 
-    _assert_exit 0 "agent-harness pack is valid" \
-        validate_pack "$PROJECT_ROOT/packs/agent-harness"
+    _assert_exit 0 "agent-harness genome is valid" \
+        validate_genome "$PROJECT_ROOT/genomes/agent-harness"
 
-    _assert_exit 0 "codebase pack is valid" \
-        validate_pack "$PROJECT_ROOT/packs/codebase"
+    _assert_exit 0 "codebase genome is valid" \
+        validate_genome "$PROJECT_ROOT/genomes/codebase"
 }
 
 # ---------------------------------------------------------------------------
-# test_validate_pack_no_yaml
-# validate_pack returns 1 for a directory with no pack.yaml
+# test_validate_genome_no_yaml
+# validate_genome returns 1 for a directory with no genome.yaml
 # ---------------------------------------------------------------------------
-test_validate_pack_no_yaml() {
-    echo "test_validate_pack_no_yaml"
+test_validate_genome_no_yaml() {
+    echo "test_validate_genome_no_yaml"
     setup_test_env
 
-    mkdir -p "$TEST_TMPDIR/empty-pack"
+    mkdir -p "$TEST_TMPDIR/empty-genome"
 
-    _assert_exit 1 "pack without pack.yaml is invalid" \
-        validate_pack "$TEST_TMPDIR/empty-pack"
+    _assert_exit 1 "genome without genome.yaml is invalid" \
+        validate_genome "$TEST_TMPDIR/empty-genome"
 
     teardown_test_env
 }
 
 # ---------------------------------------------------------------------------
-# test_validate_pack_missing_fields
-# validate_pack returns 1 for a pack.yaml missing required fields
+# test_validate_genome_missing_fields
+# validate_genome returns 1 for a genome.yaml missing required fields
 # ---------------------------------------------------------------------------
-test_validate_pack_missing_fields() {
-    echo "test_validate_pack_missing_fields"
+test_validate_genome_missing_fields() {
+    echo "test_validate_genome_missing_fields"
     setup_test_env
 
-    mkdir -p "$TEST_TMPDIR/bad-pack"
-    cat > "$TEST_TMPDIR/bad-pack/pack.yaml" <<'EOF'
+    mkdir -p "$TEST_TMPDIR/bad-genome"
+    cat > "$TEST_TMPDIR/bad-genome/genome.yaml" <<'EOF'
 name: "incomplete"
 description: "missing most fields"
 EOF
 
-    _assert_exit 1 "pack missing required fields is invalid" \
-        validate_pack "$TEST_TMPDIR/bad-pack"
+    _assert_exit 1 "genome missing required fields is invalid" \
+        validate_genome "$TEST_TMPDIR/bad-genome"
 
     teardown_test_env
 }
 
 # ---------------------------------------------------------------------------
-# test_list_packs
-# list_packs finds all 3 built-in packs
+# test_list_genomes
+# list_genomes finds all 3 built-in genomes
 # ---------------------------------------------------------------------------
-test_list_packs() {
-    echo "test_list_packs"
+test_list_genomes() {
+    echo "test_list_genomes"
 
     local output
-    output="$(list_packs "$PROJECT_ROOT/packs")"
+    output="$(list_genomes "$PROJECT_ROOT/genomes")"
 
-    assert_contains "$output" "infrastructure" "list_packs contains infrastructure"
-    assert_contains "$output" "agent-harness" "list_packs contains agent-harness"
-    assert_contains "$output" "codebase" "list_packs contains codebase"
+    assert_contains "$output" "infrastructure" "list_genomes contains infrastructure"
+    assert_contains "$output" "agent-harness" "list_genomes contains agent-harness"
+    assert_contains "$output" "codebase" "list_genomes contains codebase"
 
     local count
     count="$(echo "$output" | wc -l)"
-    assert_eq "3" "$count" "list_packs returns exactly 3 packs"
+    assert_eq "3" "$count" "list_genomes returns exactly 3 genomes"
 }
 
 # ---------------------------------------------------------------------------
-# test_load_pack
-# load_pack sets PACK_NAME correctly
+# test_load_genome
+# load_genome sets GENOME_NAME correctly
 # ---------------------------------------------------------------------------
-test_load_pack() {
-    echo "test_load_pack"
+test_load_genome() {
+    echo "test_load_genome"
 
-    load_pack "$PROJECT_ROOT/packs/infrastructure"
-    assert_eq "infrastructure" "$PACK_NAME" "PACK_NAME is infrastructure"
-    assert_contains "$PACK_DESCRIPTION" "infrastructure" "PACK_DESCRIPTION contains infrastructure"
+    load_genome "$PROJECT_ROOT/genomes/infrastructure"
+    assert_eq "infrastructure" "$GENOME_NAME" "GENOME_NAME is infrastructure"
+    assert_contains "$GENOME_DESCRIPTION" "infrastructure" "GENOME_DESCRIPTION contains infrastructure"
 
-    load_pack "$PROJECT_ROOT/packs/agent-harness"
-    assert_eq "agent-harness" "$PACK_NAME" "PACK_NAME is agent-harness"
+    load_genome "$PROJECT_ROOT/genomes/agent-harness"
+    assert_eq "agent-harness" "$GENOME_NAME" "GENOME_NAME is agent-harness"
 
-    load_pack "$PROJECT_ROOT/packs/codebase"
-    assert_eq "codebase" "$PACK_NAME" "PACK_NAME is codebase"
+    load_genome "$PROJECT_ROOT/genomes/codebase"
+    assert_eq "codebase" "$GENOME_NAME" "GENOME_NAME is codebase"
 }
 
 # ---------------------------------------------------------------------------
@@ -204,11 +204,11 @@ test_init_inbox() {
 # ---------------------------------------------------------------------------
 # Run all tests
 # ---------------------------------------------------------------------------
-test_validate_pack_valid
-test_validate_pack_no_yaml
-test_validate_pack_missing_fields
-test_list_packs
-test_load_pack
+test_validate_genome_valid
+test_validate_genome_no_yaml
+test_validate_genome_missing_fields
+test_list_genomes
+test_load_genome
 test_memory_templates_exist
 test_init_memory
 test_init_inbox

@@ -55,7 +55,7 @@ For each entry (in dependency order):
 1. Read the entry from `pool.json`.
 2. Read all files in `files_affected`.
 3. If the entry has status `fix`, read the validation feedback from its history to understand what failed.
-4. Determine the implementation category using pack commit categories:
+4. Determine the implementation category using genome commit categories:
    ```
    {{PACK_COMMIT_CATEGORIES}}
    ```
@@ -146,7 +146,7 @@ Entries with status `probation` get special treatment:
 
 ## Safety Rules
 
-The following pack-specific safety rules MUST be followed at all times:
+The following genome-defined safety rules MUST be followed at all times:
 ```
 {{PACK_SAFETY_RULES}}
 ```

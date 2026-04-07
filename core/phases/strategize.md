@@ -9,7 +9,7 @@ You are the **Strategize** phase of the evolve-ai pipeline. Your job is to asses
 ## Step 1 — Target Snapshot
 
 ### 1a. Run Scan Commands
-Execute all pack scan commands to capture current system state:
+Execute all genome scan commands to capture current system state:
 ```
 {{PACK_SCAN_COMMANDS}}
 ```
@@ -71,7 +71,7 @@ Based on gaps or issues identified in the snapshot:
 
 ## Step 4 — Gap Analysis
 
-Using the pack's gap analysis framework:
+Using the genome's gap analysis framework:
 ```
 {{PACK_GAP_FRAMEWORK}}
 ```
@@ -136,7 +136,7 @@ Add each big bet to `{{WORKSPACE}}/pool.json`:
   "source": "strategy",
   "ambition": <4 or 5>,
   "effort": "<small|medium|large>",
-  "category": "<from pack categories>",
+  "category": "<from genome categories>",
   "why": "<strategic rationale>",
   "expected_benefit": "<measurable benefit>",
   "success_criteria": "<verifiable conditions>",

@@ -7,7 +7,7 @@ evolve-ai is designed to make autonomous changes to real systems. The safety mod
 The safety system has 5 independent layers:
 
 ```
-Layer 1: Pack Safety Rules        (hard-coded prohibitions per target)
+Layer 1: Genome Safety Rules       (hard-coded prohibitions per target)
 Layer 2: Directives               (runtime constraints from humans)
 Layer 3: Challenge Phase           (adversarial pre-implementation review)
 Layer 4: Circuit Breaker           (automatic pause after repeated failures)
@@ -16,9 +16,9 @@ Layer 5: Reversibility Model       (every change must be undoable)
 
 Each layer can independently block or undo a change. They operate in sequence -- a change must pass all layers to proceed.
 
-## Layer 1: Pack Safety Rules
+## Layer 1: Genome Safety Rules
 
-Every pack defines two types of safety rules in `pack.yaml`:
+Every genome defines two types of safety rules in `genome.yaml`:
 
 ### Never Rules
 
@@ -176,7 +176,7 @@ The challenge phase is an adversarial gating mechanism that reviews every propos
 6. **Proportionality** -- Is the ambition score appropriate?
 7. **Timing** -- Is now the right time for this change?
 
-Plus pack-specific challenge vectors defined in `pack.yaml`.
+Plus genome-specific challenge vectors defined in `genome.yaml`.
 
 ### Verdicts
 
@@ -240,7 +240,7 @@ Every change must register its undo mechanism before executing. This is the last
 
 ### Primary Reversibility
 
-The primary mechanism is defined in `pack.yaml`:
+The primary mechanism is defined in `genome.yaml`:
 
 ```yaml
 reversibility:

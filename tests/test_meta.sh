@@ -205,7 +205,7 @@ JSONL
 # ---------------------------------------------------------------------------
 # test_meta_generate_proposals_respects_cannot_modify
 # meta_generate_proposals never proposes changes to safety rules,
-# pack identity, circuit breaker config, or its own prompt
+# genome identity, circuit breaker config, or its own prompt
 # ---------------------------------------------------------------------------
 test_meta_generate_proposals_respects_cannot_modify() {
     echo "test_meta_generate_proposals_respects_cannot_modify"
@@ -222,8 +222,8 @@ test_meta_generate_proposals_respects_cannot_modify() {
 
     # Check that no proposal targets safety rules
     local safety_proposals
-    safety_proposals="$(printf '%s' "$proposals" | jq '[.[] | select(.target == "safety_rules" or .target == "circuit_breaker" or .target == "pack_identity" or .target == "meta_prompt")] | length')"
-    assert_eq "0" "$safety_proposals" "no proposals target safety rules, circuit breaker, pack identity, or meta prompt"
+    safety_proposals="$(printf '%s' "$proposals" | jq '[.[] | select(.target == "safety_rules" or .target == "circuit_breaker" or .target == "genome_identity" or .target == "meta_prompt")] | length')"
+    assert_eq "0" "$safety_proposals" "no proposals target safety rules, circuit breaker, genome identity, or meta prompt"
 
     # Check that proposals were generated (since the system is degrading)
     local proposal_count
@@ -239,7 +239,7 @@ test_meta_generate_proposals_respects_cannot_modify() {
     while IFS= read -r target; do
         [[ -z "$target" ]] && continue
         case "$target" in
-            safety_rules|circuit_breaker|pack_identity|meta_prompt)
+            safety_rules|circuit_breaker|genome_identity|meta_prompt)
                 has_forbidden="yes"
                 ;;
         esac

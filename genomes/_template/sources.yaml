@@ -1,5 +1,5 @@
-# sources.yaml — Additional intelligence sources for this pack
-# These supplement the sources defined in pack.yaml.
+# sources.yaml — Additional intelligence sources for this genome
+# These supplement the sources defined in genome.yaml.
 #
 # Example:
 # sources:

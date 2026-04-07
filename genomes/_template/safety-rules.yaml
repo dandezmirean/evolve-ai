@@ -1,5 +1,5 @@
-# safety-rules.yaml — Additional safety rules for this pack
-# These supplement the safety_rules defined in pack.yaml.
+# safety-rules.yaml — Additional safety rules for this genome
+# These supplement the safety_rules defined in genome.yaml.
 #
 # Example:
 # never:

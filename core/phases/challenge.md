@@ -13,7 +13,7 @@ You may ONLY read the following files:
 - Files listed in each entry's `files_affected` — The actual target files
 - `{{EVOLVE_ROOT}}/metrics.jsonl` — Historical performance data
 - `{{EVOLVE_ROOT}}/MEMORY.md` — System constraints and directives
-- Pack safety rules (provided below)
+- Genome safety rules (provided below)
 
 You **CANNOT** read:
 - `{{WORKSPACE}}/strategy-notes.md` — Strategy rationale (prevents anchoring)
@@ -83,14 +83,14 @@ Apply all 7 core challenge vectors. For each, write a brief assessment (PASS/CON
 - Are there prerequisites that should land first?
 - Would this change be blocked by anything currently in progress?
 
-#### C. Attack With Pack-Specific Vectors
+#### C. Attack With Genome-Specific Vectors
 
-Apply additional challenge vectors specific to the pack:
+Apply additional challenge vectors defined in the genome:
 ```
 {{PACK_CHALLENGE_VECTORS}}
 ```
 
-For each pack vector, write a PASS/CONCERN/FAIL assessment.
+For each genome-specific vector, write a PASS/CONCERN/FAIL assessment.
 
 #### D. Issue Verdict
 
@@ -169,7 +169,7 @@ A structured report:
 | Conflict | PASS/CONCERN/FAIL | <brief note> |
 | Proportionality | PASS/CONCERN/FAIL | <brief note> |
 | Timing | PASS/CONCERN/FAIL | <brief note> |
-| <Pack Vector 1> | PASS/CONCERN/FAIL | <brief note> |
+| <Genome Vector 1> | PASS/CONCERN/FAIL | <brief note> |
 ...
 
 **Summary:** <2-3 sentence justification for verdict>
@@ -187,7 +187,7 @@ Updated with verdicts, history entries, and any added fields.
 
 - STRICT ISOLATION: Do not read any file not listed in the isolation rules. If you accidentally read a forbidden file, discard the information and re-evaluate.
 - NEVER modify `why` or `expected_benefit` fields on any pool entry.
-- NEVER approve a change that violates pack safety rules:
+- NEVER approve a change that violates genome safety rules:
   ```
   {{PACK_SAFETY_RULES}}
   ```
