@@ -97,12 +97,25 @@ run_phase() {
 }
 
 # ---------------------------------------------------------------------------
+# _validate_rollback_path <path>
+# Returns 0 if path is safe (relative, no traversal), 1 if unsafe.
+# ---------------------------------------------------------------------------
+_validate_rollback_path() {
+    local p="$1"
+    [[ "$p" == /* ]] && return 1     # absolute path
+    [[ "$p" == *..* ]] && return 1   # traversal
+    return 0
+}
+
+# ---------------------------------------------------------------------------
 # execute_rollback_manifest <manifest_file>
 # Reads a JSON manifest with a .changes array.
-# Each element must have an .undo string command which is executed in order.
+# Each element has a structured .undo object with an .op field.
+# Supported ops: git_checkout, git_revert, rm, cp
 # ---------------------------------------------------------------------------
 execute_rollback_manifest() {
     local manifest_file="$1"
+    local evolve_root="${EVOLVE_ROOT:-.}"
 
     if [[ ! -f "$manifest_file" ]]; then
         echo "[orchestrator] execute_rollback_manifest: manifest not found: $manifest_file" >&2
@@ -117,12 +130,63 @@ execute_rollback_manifest() {
 
     local i=0
     while (( i < count )); do
-        local undo_cmd
-        undo_cmd="$(jq -r ".changes[$i].undo" "$manifest_file")"
-        if [[ -n "$undo_cmd" && "$undo_cmd" != "null" ]]; then
-            echo "[orchestrator] Executing rollback step $i: $undo_cmd" >&2
-            eval "$undo_cmd" || echo "[orchestrator] Rollback step $i failed (continuing)" >&2
+        local op
+        op="$(jq -r ".changes[$i].undo.op // empty" "$manifest_file")"
+
+        if [[ -z "$op" ]]; then
+            echo "[orchestrator] Rollback step $i: no op specified — skipping" >&2
+            (( i++ )) || true
+            continue
         fi
+
+        case "$op" in
+            git_checkout)
+                local ref path
+                ref="$(jq -r ".changes[$i].undo.ref" "$manifest_file")"
+                path="$(jq -r ".changes[$i].undo.path" "$manifest_file")"
+                if _validate_rollback_path "$path"; then
+                    echo "[orchestrator] Rollback step $i: git checkout $ref -- $path" >&2
+                    git -C "$evolve_root" checkout "$ref" -- "$path" 2>/dev/null \
+                        || echo "[orchestrator] Rollback step $i failed (continuing)" >&2
+                else
+                    echo "[orchestrator] Rollback step $i: blocked unsafe path '$path'" >&2
+                fi
+                ;;
+            git_revert)
+                local ref
+                ref="$(jq -r ".changes[$i].undo.ref" "$manifest_file")"
+                echo "[orchestrator] Rollback step $i: git revert $ref" >&2
+                git -C "$evolve_root" revert --no-edit "$ref" 2>/dev/null \
+                    || echo "[orchestrator] Rollback step $i failed (continuing)" >&2
+                ;;
+            rm)
+                local path
+                path="$(jq -r ".changes[$i].undo.path" "$manifest_file")"
+                if _validate_rollback_path "$path"; then
+                    echo "[orchestrator] Rollback step $i: rm $path" >&2
+                    rm -f "$evolve_root/$path" \
+                        || echo "[orchestrator] Rollback step $i failed (continuing)" >&2
+                else
+                    echo "[orchestrator] Rollback step $i: blocked unsafe path '$path'" >&2
+                fi
+                ;;
+            cp)
+                local src dst
+                src="$(jq -r ".changes[$i].undo.src" "$manifest_file")"
+                dst="$(jq -r ".changes[$i].undo.dst" "$manifest_file")"
+                if _validate_rollback_path "$src" && _validate_rollback_path "$dst"; then
+                    echo "[orchestrator] Rollback step $i: cp $src -> $dst" >&2
+                    cp "$evolve_root/$src" "$evolve_root/$dst" \
+                        || echo "[orchestrator] Rollback step $i failed (continuing)" >&2
+                else
+                    echo "[orchestrator] Rollback step $i: blocked unsafe path(s)" >&2
+                fi
+                ;;
+            *)
+                echo "[orchestrator] Rollback step $i: unknown op '$op' — skipping" >&2
+                ;;
+        esac
+
         (( i++ )) || true
     done
 }

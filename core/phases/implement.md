@@ -80,7 +80,10 @@ Add an entry to `{{WORKSPACE}}/rollback-manifest.json`:
       "id": "<entry_id>",
       "description": "<what this change does>",
       "commit_hash": null,
-      "undo": "git -C {{EVOLVE_ROOT}} revert --no-edit <commit_hash>",
+      "undo": {
+        "op": "git_revert",
+        "ref": "<commit_hash>"
+      },
       "files_affected": ["<file1>", "<file2>"],
       "registered_at": "<ISO-8601>"
     }
@@ -90,7 +93,17 @@ Add an entry to `{{WORKSPACE}}/rollback-manifest.json`:
 
 If `rollback-manifest.json` does not exist, create it with a `{"changes": []}` structure first. Append to the `changes` array.
 
-The `commit_hash` and `undo` command will be updated after the commit is made.
+The `commit_hash` and `undo.ref` will be updated after the commit is made.
+
+**Supported rollback ops:**
+- `git_checkout` — requires `ref` and `path` (relative)
+- `git_revert` — requires `ref` (commit hash)
+- `rm` — requires `path` (relative, single file)
+- `cp` — requires `src` and `dst` (both relative)
+
+**All paths must be relative** (no leading `/`, no `..` components). Absolute or traversal paths are blocked.
+
+Do NOT use free-form shell commands. Only the structured ops above are supported.
 
 ### Step 4: Make the Change
 1. Edit the files according to the proposal.

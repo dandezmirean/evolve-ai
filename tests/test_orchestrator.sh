@@ -145,6 +145,103 @@ test_valid_pool_json_passes() {
 }
 
 # ---------------------------------------------------------------------------
+# test_rollback_rejects_path_traversal
+# ---------------------------------------------------------------------------
+test_rollback_rejects_path_traversal() {
+    echo "test_rollback_rejects_path_traversal"
+    setup_test_env
+
+    local manifest="$TEST_TMPDIR/rollback-manifest.json"
+    cat > "$manifest" <<'JSON'
+{
+  "changes": [
+    {
+      "description": "malicious traversal",
+      "undo": {
+        "op": "rm",
+        "path": "../../etc/shadow"
+      }
+    }
+  ]
+}
+JSON
+
+    local output
+    output="$(execute_rollback_manifest "$manifest" 2>&1)"
+
+    # The traversal path should be blocked
+    assert_contains "$output" "blocked" "path traversal blocked"
+
+    teardown_test_env
+}
+
+# ---------------------------------------------------------------------------
+# test_rollback_rejects_absolute_path
+# ---------------------------------------------------------------------------
+test_rollback_rejects_absolute_path() {
+    echo "test_rollback_rejects_absolute_path"
+    setup_test_env
+
+    local manifest="$TEST_TMPDIR/rollback-manifest.json"
+    cat > "$manifest" <<'JSON'
+{
+  "changes": [
+    {
+      "description": "malicious absolute",
+      "undo": {
+        "op": "rm",
+        "path": "/etc/passwd"
+      }
+    }
+  ]
+}
+JSON
+
+    local output
+    output="$(execute_rollback_manifest "$manifest" 2>&1)"
+
+    assert_contains "$output" "blocked" "absolute path blocked"
+
+    teardown_test_env
+}
+
+# ---------------------------------------------------------------------------
+# test_rollback_executes_safe_ops
+# ---------------------------------------------------------------------------
+test_rollback_executes_safe_ops() {
+    echo "test_rollback_executes_safe_ops"
+    setup_test_env
+
+    # Create a file to be removed by rollback
+    mkdir -p "$TEST_TMPDIR/src"
+    echo "test" > "$TEST_TMPDIR/src/new-file.sh"
+
+    local manifest="$TEST_TMPDIR/rollback-manifest.json"
+    cat > "$manifest" <<JSON
+{
+  "changes": [
+    {
+      "description": "remove new file",
+      "undo": {
+        "op": "rm",
+        "path": "src/new-file.sh"
+      }
+    }
+  ]
+}
+JSON
+
+    # Need EVOLVE_ROOT set for path resolution
+    EVOLVE_ROOT="$TEST_TMPDIR" execute_rollback_manifest "$manifest" 2>/dev/null
+
+    local exists=0
+    [[ -f "$TEST_TMPDIR/src/new-file.sh" ]] && exists=1
+    assert_eq "0" "$exists" "safe rm operation executed"
+
+    teardown_test_env
+}
+
+# ---------------------------------------------------------------------------
 # Run all tests
 # ---------------------------------------------------------------------------
 test_workspace_creation
@@ -152,5 +249,8 @@ test_convergence_detection
 test_stall_detection
 test_malformed_pool_json_detected
 test_valid_pool_json_passes
+test_rollback_rejects_path_traversal
+test_rollback_rejects_absolute_path
+test_rollback_executes_safe_ops
 
 report_results
