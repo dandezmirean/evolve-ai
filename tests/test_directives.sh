@@ -24,10 +24,10 @@ test_directive_create_valid_yaml() {
 
     local content
     content="$(cat "$result")"
-    assert_contains "$content" 'type: "lock"' "contains type field"
-    assert_contains "$content" 'target: "src/auth/login.sh"' "contains target field"
-    assert_contains "$content" 'rule: "Do not modify auth login"' "contains rule field"
-    assert_contains "$content" 'source: "human-resume"' "contains source field"
+    assert_contains "$content" "type: 'lock'" "contains type field"
+    assert_contains "$content" "target: 'src/auth/login.sh'" "contains target field"
+    assert_contains "$content" "rule: 'Do not modify auth login'" "contains rule field"
+    assert_contains "$content" "source: 'human-resume'" "contains source field"
     assert_contains "$content" "expires: null" "contains null expires"
     assert_contains "$content" "created:" "contains created timestamp"
 

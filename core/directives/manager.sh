@@ -92,9 +92,9 @@ _directive_read_field() {
         $1 == f {
             val = $2
             for (i = 3; i <= NF; i++) val = val ": " $i
-            # Strip surrounding quotes
-            gsub(/^"/, "", val)
-            gsub(/"$/, "", val)
+            # Strip surrounding quotes (double or single)
+            gsub(/^["'"'"']/, "", val)
+            gsub(/["'"'"']$/, "", val)
             print val
             exit
         }
