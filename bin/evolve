@@ -5,6 +5,16 @@ set -euo pipefail
 EVOLVE_BIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EVOLVE_ROOT="$(cd "$EVOLVE_BIN_DIR/.." && pwd)"
 
+# Check required dependencies
+for cmd in jq yq; do
+    if ! command -v "$cmd" >/dev/null 2>&1; then
+        echo "evolve-ai: required command '$cmd' not found in PATH" >&2
+        echo "  Install yq: https://github.com/mikefarah/yq#install" >&2
+        echo "  Install jq: apt install jq" >&2
+        exit 1
+    fi
+done
+
 source "$EVOLVE_ROOT/core/orchestrator.sh"
 source "$EVOLVE_ROOT/core/resume/resume-runner.sh"
 
