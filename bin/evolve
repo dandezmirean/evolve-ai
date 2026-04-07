@@ -201,9 +201,10 @@ main() {
         meta)
             local sub="${1:-}"
             shift || true
+            source "$EVOLVE_ROOT/core/meta/meta-agent.sh"
             case "$sub" in
-                run)    echo "evolve meta run: not yet implemented" ;;
-                status) echo "evolve meta status: not yet implemented" ;;
+                run)    meta_run "$EVOLVE_ROOT" ;;
+                status) meta_status "$EVOLVE_ROOT" ;;
                 *)      echo "Unknown meta subcommand: $sub" >&2; usage; exit 1 ;;
             esac
             ;;
