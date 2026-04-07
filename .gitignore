@@ -1,0 +1,18 @@
+# Runtime
+*.lock
+workspace/
+memory/
+inbox/
+resume-context/
+directives/
+
+# Config (user-specific)
+config/evolve.yaml
+
+# OS
+.DS_Store
+*.swp
+*~
+
+# Logs
+*.log
