@@ -279,6 +279,15 @@ run_pipeline() {
         return 0
     fi
 
+    # --- Validate pool.json before convergence loop ---
+    if [ -f "$pool_file" ] && ! jq empty "$pool_file" 2>/dev/null; then
+        echo "[orchestrator] CRITICAL: pool.json is malformed — aborting pipeline" >&2
+        echo "[orchestrator] NOTIFY: Pipeline aborted: pool.json corrupted in $workspace" >&2
+        release_lock "$lock_file"
+        trap - ERR INT TERM
+        return 2
+    fi
+
     # --- Implementation loop: implement → validate → finalize ---
     local stall_count=0
     local prev_hash=""

@@ -105,10 +105,52 @@ test_stall_detection() {
 }
 
 # ---------------------------------------------------------------------------
+# test_malformed_pool_json_detected
+# jq empty returns non-zero for malformed pool.json
+# ---------------------------------------------------------------------------
+test_malformed_pool_json_detected() {
+    echo "test_malformed_pool_json_detected"
+    setup_test_env
+
+    mkdir -p "$TEST_TMPDIR/workspace/2026-01-01"
+    echo '{broken json' > "$TEST_TMPDIR/workspace/2026-01-01/pool.json"
+
+    local detected=0
+    if ! jq empty "$TEST_TMPDIR/workspace/2026-01-01/pool.json" 2>/dev/null; then
+        detected=1
+    fi
+    assert_eq "1" "$detected" "malformed pool.json is detected by jq empty"
+
+    teardown_test_env
+}
+
+# ---------------------------------------------------------------------------
+# test_valid_pool_json_passes
+# jq empty returns zero for valid pool.json
+# ---------------------------------------------------------------------------
+test_valid_pool_json_passes() {
+    echo "test_valid_pool_json_passes"
+    setup_test_env
+
+    mkdir -p "$TEST_TMPDIR/workspace/2026-01-01"
+    echo '{"changes":[]}' > "$TEST_TMPDIR/workspace/2026-01-01/pool.json"
+
+    local passed=0
+    if jq empty "$TEST_TMPDIR/workspace/2026-01-01/pool.json" 2>/dev/null; then
+        passed=1
+    fi
+    assert_eq "1" "$passed" "valid pool.json passes jq empty check"
+
+    teardown_test_env
+}
+
+# ---------------------------------------------------------------------------
 # Run all tests
 # ---------------------------------------------------------------------------
 test_workspace_creation
 test_convergence_detection
 test_stall_detection
+test_malformed_pool_json_detected
+test_valid_pool_json_passes
 
 report_results
