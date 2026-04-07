@@ -13,6 +13,18 @@ _sanitize_target() {
 }
 
 # ---------------------------------------------------------------------------
+# _yaml_quote <value>
+#
+# Safely quotes a string for YAML output using single-quote wrapping.
+# Single quotes inside the value are escaped as '' (YAML spec).
+# ---------------------------------------------------------------------------
+_yaml_quote() {
+    local val="$1"
+    val="${val//\'/\'\'}"
+    printf "'%s'" "$val"
+}
+
+# ---------------------------------------------------------------------------
 # directive_create <directives_dir> <type> <target> <rule> <source> <expires>
 #
 # Creates a new directive YAML file.
@@ -37,24 +49,30 @@ directive_create() {
     local created
     created="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 
+    local q_type q_target q_rule q_source
+    q_type="$(_yaml_quote "$type")"
+    q_target="$(_yaml_quote "$target")"
+    q_rule="$(_yaml_quote "$rule")"
+    q_source="$(_yaml_quote "$source")"
+
     # Write YAML — expires is either null (unquoted) or a quoted date
     if [[ "$expires" == "null" ]]; then
         cat > "$filepath" <<YAMLEOF
-type: "${type}"
-target: "${target}"
-rule: "${rule}"
+type: ${q_type}
+target: ${q_target}
+rule: ${q_rule}
 created: "${created}"
-source: "${source}"
+source: ${q_source}
 expires: null
 YAMLEOF
     else
         cat > "$filepath" <<YAMLEOF
-type: "${type}"
-target: "${target}"
-rule: "${rule}"
+type: ${q_type}
+target: ${q_target}
+rule: ${q_rule}
 created: "${created}"
-source: "${source}"
-expires: "${expires}"
+source: ${q_source}
+expires: "$(_yaml_quote "$expires")"
 YAMLEOF
     fi
 
