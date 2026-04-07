@@ -12,6 +12,34 @@ You could audit, plan, implement, test, and rollback — every day — for every
 
 ---
 
+## The organism
+
+evolve-ai is modeled after a living organism. Each component has a biological analog — understanding the metaphor is understanding the system.
+
+**Genome** — The DNA. A genome encodes everything evolve-ai needs to know about a target system: how to scan it, what healthy looks like, what's off-limits, how to measure improvement, and how to undo mistakes. You don't tell evolve-ai *what to do* — you give it a genome and it figures out the rest. Ships with three: infrastructure, codebase, and agent-harness. You can breed your own by describing a target in plain language.
+
+**Lens** — The sensory organs. Each genome has a lens that defines how the organism perceives the outside world. A lens is organized by **concerns** — security posture, dependency health, resource drift — not by what protocol delivers the data. A single concern can see through multiple channels simultaneously: RSS feeds, shell commands, human file drops, agent pushes. The concern is the sense; the feed is just the nerve ending.
+
+**Pool** — The bloodstream. Every proposed change enters the pool and flows through the pipeline. The pool is a JSON state machine that tracks each proposal from birth (`pending`) through trial (`implemented`, `validated`) to fate (`landed`, `reverted`, or `killed`). Nothing happens outside the pool. Nothing is forgotten.
+
+**Challenge** — The immune system. Before any proposal touches the target system, it faces an adversarial review. The challenge phase operates in isolation — it cannot see the reasoning that created the proposal. It attacks with 7+ vectors: speculative benefit, blast radius, scope creep, resource feasibility, track record. Bad ideas are killed before they infect the host.
+
+**Finalize** — Natural selection. After implementation and validation, finalize decides what survives. Changes with positive impact land. Changes that cause harm are reverted. Changes that fail repeatedly are killed. The strong persist; the weak are culled.
+
+**Memory** — Long-term memory. The organism remembers what it learned across runs: what landed, what failed, what patterns repeat, what strategic direction it's heading. Seven memory files persist facts, changelog, vision, strategy history, impact observations, and structured metrics. Phases read memory before acting — the organism learns from its past.
+
+**Resume context** — Consciousness. Every decision the pipeline makes produces a re-enterable context file. A human can inhabit any decision point after the fact: override a kill, redirect a proposal, expand research, or inject a new rule. The organism acts autonomously, but a human can always step inside its mind.
+
+**Directives** — Instincts. Persistent rules encoded from experience. A resume session might produce a directive: "never touch auth files," "prioritize security for the next 5 runs," "this category requires approval." Directives shape future behavior without requiring the human to be present when they fire.
+
+**Circuit breaker** — The pain reflex. If three or more changes produce negative impact within seven days, the organism halts. It stops proposing, sends a diagnostic report, and waits for a human to investigate. Evolution is relentless, but self-destruction is not evolution.
+
+**Meta-agent** — The evolutionary pressure on the organism itself. A weekly outer loop that evaluates the pipeline's own fitness: Are phases spending turns well? Is scoring calibrated? Are intelligence sources credible? Is the system avoiding hard problems? The meta-agent tunes the inner loop's parameters — the organism that improves your systems also improves itself.
+
+**Scoring** — The nervous system. Four layers of feedback measure every change: heuristic metrics (automated numbers), LLM-as-judge (qualitative evaluation), KPI baselines (before/after measurement), and user-defined checks. Signals propagate back through every phase — strategize learns what categories succeed, challenge learns what to doubt, finalize learns when to trust.
+
+---
+
 ## See it work
 
 Here is what a typical `evolve run` looks like against an infrastructure target:
