@@ -9,6 +9,7 @@ source "$SCRIPT_DIR_ORCH/lock.sh"
 source "$SCRIPT_DIR_ORCH/housekeeping.sh"
 source "$SCRIPT_DIR_ORCH/resources.sh"
 source "$SCRIPT_DIR_ORCH/lens/engine.sh"
+source "$SCRIPT_DIR_ORCH/providers/interface.sh"
 
 # ---------------------------------------------------------------------------
 # create_workspace <evolve_root> [date_suffix]
@@ -89,7 +90,7 @@ run_phase() {
 
     # Invoke provider if available, otherwise STUB
     if declare -f provider_invoke >/dev/null 2>&1; then
-        provider_invoke "$phase_name" "$prompt_file" "$workspace" "$max_turns"
+        provider_invoke "$prompt_file" "$max_turns" "$workspace" "$phase_name"
     else
         echo "[orchestrator] STUB: provider_invoke not available — skipping phase '$phase_name'" >&2
     fi
@@ -234,7 +235,7 @@ run_pipeline() {
     echo "[orchestrator] Workspace: $workspace"
 
     local pool_file="$workspace/pool.json"
-    local prompts_dir="$evolve_root/prompts"
+    local prompts_dir="$evolve_root/core/phases"
 
     # Helper: get prompt file path for a phase (falls back to /dev/null if missing)
     _prompt_for() {
