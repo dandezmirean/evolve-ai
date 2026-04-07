@@ -21,72 +21,10 @@ load_config() {
         return 1
     fi
 
-    _CONFIG_CACHE="$(awk '
-    BEGIN {
-        section = ""
-    }
-
-    # Skip blank lines and comment-only lines
-    /^[[:space:]]*$/ { next }
-    /^[[:space:]]*#/  { next }
-
-    {
-        # Strip inline comments (anything after " #" that is not inside quotes)
-        # Simple approach: strip trailing " #..." portion
-        line = $0
-
-        # Detect indentation level
-        indent = 0
-        tmp = line
-        while (substr(tmp,1,1) == " ") {
-            indent++
-            tmp = substr(tmp,2)
-        }
-
-        # Strip leading whitespace
-        sub(/^[[:space:]]+/, "", line)
-        # Strip inline comment: space + "#" followed by anything
-        sub(/[[:space:]]+#.*$/, "", line)
-
-        # Skip list items (lines starting with "- ") at top or nested level — not scalar k/v
-        # But we do want to skip them silently since we only parse scalar key: value pairs
-        if (substr(line,1,2) == "- ") {
-            next
-        }
-
-        # Check if this is a key: value line
-        colon = index(line, ":")
-        if (colon == 0) { next }
-
-        key   = substr(line, 1, colon - 1)
-        value = substr(line, colon + 1)
-
-        # Strip leading/trailing whitespace from key and value
-        gsub(/^[[:space:]]+|[[:space:]]+$/, "", key)
-        gsub(/^[[:space:]]+|[[:space:]]+$/, "", value)
-
-        # Strip surrounding quotes from value
-        if ((substr(value,1,1) == "\"" && substr(value,length(value),1) == "\"") ||
-            (substr(value,1,1) == "'"'"'" && substr(value,length(value),1) == "'"'"'")) {
-            value = substr(value, 2, length(value) - 2)
-        }
-
-        if (indent == 0) {
-            if (value == "") {
-                # Section header (no value) — set current section
-                section = key
-            } else {
-                # Top-level scalar
-                section = ""
-                print key "=" value
-            }
-        } else {
-            # Nested key under current section
-            if (section != "" && key != "") {
-                print section "." key "=" value
-            }
-        }
-    }
+    # Use yq to flatten YAML into key.path=value pairs
+    _CONFIG_CACHE="$(yq '
+        .. | select(tag != "!!map" and tag != "!!seq") |
+        (path | join(".")) + "=" + (. | tostring)
     ' "$config_file")"
 
     return 0

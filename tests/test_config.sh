@@ -73,10 +73,63 @@ test_config_default() {
 }
 
 # ---------------------------------------------------------------------------
+# test_load_config_list_items
+# ---------------------------------------------------------------------------
+test_load_config_list_items() {
+    echo "test_load_config_list_items"
+    setup_test_env
+
+    local yaml="$TEST_TMPDIR/evolve.yaml"
+    cp "$PROJECT_ROOT/config/evolve.yaml.template" "$yaml"
+
+    load_config "$yaml"
+
+    assert_eq "infrastructure" "$(config_get targets.0.genome)" "targets.0.genome"
+    assert_eq "."              "$(config_get targets.0.root)"   "targets.0.root"
+    assert_eq "1"              "$(config_get targets.0.weight)" "targets.0.weight"
+    assert_eq "digest"         "$(config_get pipeline.phases.0)" "pipeline.phases.0"
+    assert_eq "metrics"        "$(config_get pipeline.phases.7)" "pipeline.phases.7"
+
+    teardown_test_env
+}
+
+# ---------------------------------------------------------------------------
+# test_load_config_deep_nesting
+# ---------------------------------------------------------------------------
+test_load_config_deep_nesting() {
+    echo "test_load_config_deep_nesting"
+    setup_test_env
+
+    local yaml="$TEST_TMPDIR/genome.yaml"
+    cat > "$yaml" <<'YAML'
+name: "test-genome"
+scorers:
+  llm_judge:
+    enabled: true
+    prompt: "Rate this change"
+  heuristic:
+    - name: "uptime"
+      weight: 2
+YAML
+
+    load_config "$yaml"
+
+    assert_eq "test-genome" "$(config_get name)"                        "name"
+    assert_eq "true"        "$(config_get scorers.llm_judge.enabled)"   "scorers.llm_judge.enabled"
+    assert_eq "Rate this change" "$(config_get scorers.llm_judge.prompt)" "scorers.llm_judge.prompt"
+    assert_eq "uptime"      "$(config_get scorers.heuristic.0.name)"    "scorers.heuristic.0.name"
+    assert_eq "2"           "$(config_get scorers.heuristic.0.weight)"  "scorers.heuristic.0.weight"
+
+    teardown_test_env
+}
+
+# ---------------------------------------------------------------------------
 # Run all tests
 # ---------------------------------------------------------------------------
 test_load_config
 test_config_missing_key
 test_config_default
+test_load_config_list_items
+test_load_config_deep_nesting
 
 report_results
